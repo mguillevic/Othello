@@ -26,4 +26,19 @@ compterPionsJoueur(Matrix,Player,Res):-
 eval(Grid,Player,Res):-
     otherPlayer(Player,P2), compterPionsJoueur(Grid,Player,N1),
     compterPionsJoueur(Grid,P2,N2), Res is N1-N2.
+
+getRow([Liste|_],0,Liste).
+getRow([_|NextRows],Index,Row):-
+    getRow(NextRows,I2,Row), Index is I2+1.
+
+getColumn([],_,[]).
+getColumn([T|Q],I,[R|X]):-
+    getRow(T,I,R),getColumn(Q,I,X).
+	
+
+caseVide([v|_],0).
+caseVide([_|Q],I):-caseVide(Q,I1),I is I1+1.
+
+caseVide(Grid,RowIndex,ColumnIndex):-
+    getRow(Grid,RowIndex,Row),caseVide(Row,ColumnIndex).
 	
