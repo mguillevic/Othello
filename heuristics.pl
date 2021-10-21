@@ -1,15 +1,29 @@
-coeff(maxPlayer,1).
-coeff(minPlayer,-1).
+max([X],X).
+max([T|Q],R):-max(Q,R), R>=T.
+max([T|Q],T):-max(Q,R), T>R.
 
-compterPions(_,[],0).
-compterPions(Symbol,[Symbol|Q],Nb1):-
-     compterPions(Symbol,Q,Nb2),Nb1 is Nb2+1.
+min([X],X).
+min([T|Q],R):-min(Q,R), R<T.
+min([T|Q],T):-min(Q,R), T=<R.
 
-compterPions(Symbol,[T|Q],Nb):-
-    T\==Symbol,compterPions(Symbol,Q,Nb).
+compterSymboles(_,[],0).
+compterSymboles(Symbol,[Symbol|Q],Nb1):-
+     compterSymboles(Symbol,Q,Nb2),Nb1 is Nb2+1.
+
+compterSymboles(Symbol,[T|Q],Nb):-
+    T\==Symbol,compterSymboles(Symbol,Q,Nb).
 
 hasSymbol(maxPlayer,o).
 hasSymbol(minPlayer,x).
 
-eval(Matrix,Player,Res):-
-    flatten(Matrix,Liste),hasSymbol(Player,Symbol),compterPions(Symbol,Liste,Res).
+otherPlayer(maxPlayer,minPlayer).
+otherPlayer(minPlayer,maxPlayer).
+
+compterPionsJoueur(Matrix,Player,Res):-
+    flatten(Matrix,Liste),hasSymbol(Player,Symbol),
+    compterSymboles(Symbol,Liste,Res).
+
+eval(Grid,Player,Res):-
+    otherPlayer(Player,P2), compterPionsJoueur(Grid,Player,N1),
+    compterPionsJoueur(Grid,P2,N2), Res is N1-N2.
+	
