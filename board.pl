@@ -68,8 +68,8 @@ correct_move(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv is 
 (compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv), modify_diag_bas_droit(Board, Player, NbRowPrecPrec, NbColPrecPrec))
 . 
 
-
-
+%la diagonale qui va vers le haut a gauche respecte le critere de placement si on trouve un pion de meme couleur avant la fin ou de trouver un vide (le premier pion de couleur differente a deja ete teste avant). Si on sort du tableau (col -1 ou lig -1), ou si un element est variable, alors la condition n'est pas respectee et on sort. Ainsi on verifie jusqu'a -1 lig ou -1 col quel est le pion actuel, s'il est variable (vide), on renvoie faux, s'il est identique au player on renvoie true, et s'il est de la couleur opposee on conyinue de chercher recursivement sur la diagonale.
+%la logique est la meme pour les 7 autres directions
 correct_diag_haut_gauche(Board, Player, -1, _) :- fail.
 correct_diag_haut_gauche(Board, Player, _, -1) :- fail.
 correct_diag_haut_gauche(Board, Player, NbRow, NbCol) :- get_element(Board, NbRow, NbCol, Val), nonvar(Val), (compare_element(Board, Player, NbRow, NbCol) ; (NbRowPrec is NbRow-1, NbColPrec is NbCol-1, correct_diag_haut_gauche(Board, Player, NbRowPrec, NbColPrec))).
