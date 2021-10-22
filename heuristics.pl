@@ -33,11 +33,18 @@ getListElement(Symbol,Liste,Index):-nth0(Index,Liste,Symbol).
 getMatrixElement(Symbol,Grid,X,Y):-
     getRow(Grid,X,Row), getListElement(Symbol,Row,Y).
 
+evalRowWithCoeffs(_,_,_,[],0).
+evalRowWithCoeffs(X,Y,Symbol,[Symbol|Q],Res):-
+    coeffCase(X,Y,Coeff), Y1 is Y+1, evalRowWithCoeffs(X,Y1,Symbol,Q,Res2), 
+    Res is Res2+Coeff.
+evalRowWithCoeffs(X,Y,Symbol,[_|Q],Res):-
+        Y1 is Y+1, evalRowWithCoeffs(X,Y1,Symbol,Q,Res).
 
-evalWithCoeffs(_,[],0).	
-evalWithCoeffs(Player,Grid,Res):-
-	hasSymbol(Player,Symbol), getMatrixElement(Symbol,Grid,X,Y), 
-    coeffCase(X,Y,Coeff), Res is Res+Coeff.
+evalWithCoeffs(_,0,[],0).
+evalWithCoeffs(Player,X,[T|Q],Res):-
+	hasSymbol(Player,Symbol),evalRowWithCoeffs(X,0,Symbol,T,ResLine), 
+    evalWithCoeffs(Player,X1,Q,Res1),X is X1+1,
+    Res is Res1+ResLine.
 
 getRow([Liste|_],0,Liste).
 getRow([_|NextRows],Index,Row):-
