@@ -1,2 +1,2 @@
 l :- launchOthello.
-launchOthello :- consult('Othello/board'), init.
+launchOthello :- consult('/Users/ahmed-os/Desktop/Informatique/DASI/Othello/board'), init.
