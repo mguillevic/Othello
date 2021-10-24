@@ -122,8 +122,8 @@ modify_diag_haut_droit(_, _, -1, _, _) :- fail.
 modify_diag_haut_droit(_, _, _, 8, _) :- fail.
 modify_diag_haut_droit(Board, Player, NbRow, NbCol, NewNewBoard) :- get_element(Board, NbRow, NbCol, Val), nonvar(Val), ((compare_element(Board, Player, NbRow, NbCol), remplacer(Board, NbRow, NbCol, Player, NewNewBoard)) ; (NbRowPrec is NbRow-1, NbColSuiv is NbCol+1, remplacer(Board, NbRow, NbCol, Player, NewBoard), modify_diag_haut_droit(NewBoard, Player, NbRowPrec, NbColSuiv, NewNewBoard))).
 
-modify_diag_bas_droit(Board, Player, -1, _, NewBoard) :- fail.
-modify_diag_bas_droit(Board, Player, _, -1, NewBoard) :- fail.
+modify_diag_bas_droit(_, _, -1, _, _) :- fail.
+modify_diag_bas_droit(_, _, _, -1, _) :- fail.
 modify_diag_bas_droit(Board, Player, NbRow, NbCol, NewNewBoard) :- get_element(Board, NbRow, NbCol, Val), nonvar(Val), ((compare_element(Board, Player, NbRow, NbCol), remplacer(Board, NbRow, NbCol, Player, NewNewBoard)) ; (NbRowSuiv is NbRow+1, NbColSuiv is NbCol+1, remplacer(Board, NbRow, NbCol, Player, NewBoard), modify_diag_bas_droit(NewBoard, Player, NbRowSuiv, NbColSuiv, NewNewBoard))).
 
 modify_haut(_, _, -1, _, _) :- fail.
