@@ -15,24 +15,25 @@ assertLength([H|Q]) :- length(H,8), assertLength(Q).
 
 %predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis recupere la case ou le joueur veut poser sa piece. On distingue ensuite deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
 %%%il faut rajouter que s'il n'y a aucun coup possible pour le joueur 'Player', on donne la main a l'autre, et que si le jeu est fini (plateau plein ou les deux joueurs bloques), on termine l'execution en affichant le gagnant ou le draw avec les resultats
-play(Player) :- display_board, board(Board), write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), write('Colonne'), read(C), 
+play(Player) :- display_board(Player), board(Board), write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), write('Colonne'), read(C), 
 %distinction des cas coup valide et invalide
-((correct_move(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), play(NewPlayer))  ;  play(Player)).
+((correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), play(NewPlayer))  ;  play(Player)).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
+printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
+printVal(V, Color) :- ansi_format([bold,Color], '~w', V).
 printVal(V) :- var(V), write('-'), !.
 printVal(V) :- write(V).
 
 %pour chaque ligne, on appelle l'affichage de sa premiere case (qui va recursivement appeler l'affichage des cases suivantes), puis on saute une ligne et on appelle recursivement les autres lignes. Le premier appel a la ligne affiche 0 puis chaque nouveau appel affiche 1 de plus
-display_row([], _).
-display_row([H|Q], I) :-  write(I), display_char(H), writeln(''), J is I+1, display_row(Q, J).
-display_row([H|Q]) :-  write('0'), display_char(H), writeln(''), display_row(Q, 1).
-display_char([]).
-display_char([H|Q]) :-  printVal(H), display_char(Q).
+display_row([], _, _).
+display_row([H|Q], Player, NbRow) :-  write(NbRow), display_char(H, Player, NbRow, 0), writeln(''), NextNbRow is NbRow+1, display_row(Q, Player, NextNbRow).
+display_char([], _, _, _).
+display_char([H|Q], Player, NbRow, NbCol) :-  ((board(Board), correct_move(Board, Player, NbRow, NbCol), printVal(H, fg(cyan)));printVal(H)), NextNbCol is NbCol+1, display_char(Q, Player, NbRow, NextNbCol).
 
 %affichage du plateau
-display_board :- cls, writeln('********'), writeln(' 01234567'), board(Board), display_row(Board), writeln('********').
-display_board(B) :- cls, writeln('********'), writeln(' 01234567'), display_row(B), writeln('********').
+display_board(Player) :- cls, writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, Player, 0), writeln('********').
+display_board(B, Player) :- cls, writeln('********'), writeln(' 01234567'), display_row(B, Player, 0), writeln('********').
 cls :- true.
 %cls :- write('\e[H\e[2J').
 
@@ -49,7 +50,7 @@ get_row(Board, NbRow, Row) :- nth0(NbRow,Board,Row).
 compare_element(Board, Val, NbRow, NbCol) :- get_element(Board, NbRow, NbCol, Var), nonvar(Var), get_element(Board, NbRow, NbCol, Val).
 
 %correctMove sert a savoir si on peut jouer dans une case specifique en respectant les regles. Il faut que dans au moins une des huit directions, il faut qu'il y ait une suite d'au moins un pion oppose avec au bout un element identique. Cela correspond a la premiere suite de 'or' (';'). Ensuite, il faut que si le coup soit valide, toutes les suites de pions verifiant la condition soient transformes en le pion du dernier joueur. Il s'agit de la derniere suite de 'et'. Pour chacune des directions, si la condition est validee, on modifie les pions.
-correct_move(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite), 
+correct_move(Board, Player, NbRow, NbCol) :- get_element(Board, NbRow, NbCol, Val), var(Val), NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite), 
 ((compare_element(Board, Opposite, NbRowPrec, NbColPrec), correct_diag_haut_gauche(Board, Player, NbRowPrecPrec, NbColPrecPrec));
 (compare_element(Board, Opposite, NbRowPrec, NbCol), correct_haut(Board, Player, NbRowPrecPrec, NbCol));
 (compare_element(Board, Opposite, NbRowPrec, NbColSuiv), correct_diag_haut_droit(Board, Player, NbRowPrecPrec, NbColSuivSuiv));
@@ -57,8 +58,9 @@ correct_move(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv is 
 (compare_element(Board, Opposite, NbRow, NbColSuiv), correct_droit(Board, Player, NbRow, NbColSuivSuiv));
 (compare_element(Board, Opposite, NbRowSuiv, NbColPrec), correct_diag_bas_gauche(Board, Player, NbRowSuivSuiv, NbColPrecPrec));
 (compare_element(Board, Opposite, NbRowSuiv, NbCol), correct_bas(Board, Player, NbRowSuivSuiv, NbCol));
-(compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv))),
+(compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv))).
 
+reverse_elements(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite), 
 ((compare_element(Board, Opposite, NbRowPrec, NbColPrec), correct_diag_haut_gauche(Board, Player, NbRowPrecPrec, NbColPrecPrec), modify_diag_haut_gauche(Board, Player, NbRowPrec, NbColPrec, NewBoard), applyIt(Board, NewBoard));true),
 ((board(Board2), compare_element(Board, Opposite, NbRowPrec, NbCol), correct_haut(Board, Player, NbRowPrecPrec, NbCol), modify_haut(Board2, Player, NbRowPrec, NbCol, NewBoard2), applyIt(Board2, NewBoard2));true),
 ((board(Board3), compare_element(Board, Opposite, NbRowPrec, NbColSuiv), correct_diag_haut_droit(Board, Player, NbRowPrecPrec, NbColSuivSuiv), modify_diag_haut_droit(Board3, Player, NbRowPrec, NbColSuiv, NewBoard3), applyIt(Board3, NewBoard3));true),
@@ -137,3 +139,14 @@ modify_droit(Board, Player, NbRow, NbCol, NewNewBoard) :- get_element(Board, NbR
 
 modify_gauche(_, _, _, -1, _) :- fail.
 modify_gauche(Board, Player, NbRow, NbCol, NewNewBoard) :- get_element(Board, NbRow, NbCol, Val), nonvar(Val), ((compare_element(Board, Player, NbRow, NbCol), remplacer(Board, NbRow, NbCol, Player, NewNewBoard)) ; (NbColPrec is NbCol-1, remplacer(Board, NbRow, NbCol, Player, NewBoard), modify_gauche(NewBoard, Player, NbRow, NbColPrec, NewNewBoard))).
+
+%liste tous les coups possible d'un joueur dans un tableau avec 'Y' la ou il peut jouer et 'N' dans le reste. Pour chaque ligne, on appelle le predicat de recherche pour la premiere case puis on appelle recursivement la ligne suivante. Pour chaque case, on regarde si le coup est possible et on le stock dans le tableau puis on regarde recurssivement pour le suivant.
+list_possible_correct_moves(Board, Player, CorrectMoves) :- list_possible_correct_moves_row(Board, Player, 0, CorrectMoves).
+
+list_possible_correct_moves_box(_, _, NbRow, 8, []) :- NbRow > -1.
+list_possible_correct_moves_box(Board, Player, NbRow, NbCol, [T|Q]) :- NbRow > -1, NbCol > -1, ((correct_move(Board, Player, NbRow, NbCol), T='Y') ; T='N'), NbColSuiv is NbCol + 1, list_possible_correct_moves_box(Board, Player, NbRow, NbColSuiv, Q).
+list_possible_correct_moves_box(_, _, _, _, []).
+
+list_possible_correct_moves_row(_, _, 8, []).
+list_possible_correct_moves_row(Board, Player, NbRow, [T|Q]) :- NbRow > -1, list_possible_correct_moves_box(Board, Player, NbRow, 0, T), NextNbRow is NbRow+1, list_possible_correct_moves_row(Board, Player, NextNbRow, Q).
+list_possible_correct_moves_row(_, _, _, []).
