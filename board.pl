@@ -2,7 +2,7 @@
 :- dynamic board/1. 
 
 %predicat appele pour lancer le jeu, il purge d'abord la memoire de l'ancien tableau, puis cree un nouveau plateau en posant les 4 premieres pieces (2 'x' et 2 'o' au milieu du plateau) puis donne la main au joueur x.
-init :- retractall(board(Board)), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 2, NewBoard, x), applyIt(Board,NewBoard), play('x'), !.
+init :- retractall(board(Board)), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 2, NewBoard, x), applyIt(Board,NewBoard), play('x'), /*list_possible_correct_moves(Board, o, CorrectMoves), display_board(CorrectMoves, o),*/ !.
 
 %sert a recuperer le joueur suivant
 opposite(x,o).
@@ -13,11 +13,19 @@ opposite(o,x).
 assertLength([]).
 assertLength([H|Q]) :- length(H,8), assertLength(Q).
 
-%predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis recupere la case ou le joueur veut poser sa piece. On distingue ensuite deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
+%si la methode recoit le caractere d'arret (ici 'a'), on reussi le test, sinon il fail.
+asking_for_exit(a) :- true.
+asking_for_exit(_) :- fail.
+
+%predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
+play(Player) :- display_board(Player), board(Board), lis(Board, Player).
+
+%Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete. 
+lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
+
+%Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer. 
 %%%il faut rajouter que s'il n'y a aucun coup possible pour le joueur 'Player', on donne la main a l'autre, et que si le jeu est fini (plateau plein ou les deux joueurs bloques), on termine l'execution en affichant le gagnant ou le draw avec les resultats
-play(Player) :- display_board(Player), board(Board), write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), write('Colonne'), read(C), 
-%distinction des cas coup valide et invalide
-((correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), play(NewPlayer))  ;  play(Player)).
+play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), play(NewPlayer))  ;  play(Player).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
 printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
@@ -25,7 +33,7 @@ printVal(V, Color) :- ansi_format([bold,Color], '~w', V).
 printVal(V) :- var(V), write('-'), !.
 printVal(V) :- write(V).
 
-%pour chaque ligne, on appelle l'affichage de sa premiere case (qui va recursivement appeler l'affichage des cases suivantes), puis on saute une ligne et on appelle recursivement les autres lignes. Le premier appel a la ligne affiche 0 puis chaque nouveau appel affiche 1 de plus
+%pour chaque ligne, on appelle l'affichage de sa premiere case (qui va recursivement appeler l'affichage des cases suivantes), puis on saute une ligne et on appelle recursivement les autres lignes. Le premier appel a la ligne affiche 0 puis chaque nouveau appel affiche 1 de plus. A chaque appel d'affichage de case, s'il s'agit d'un jeu possible (correct) pour Player, on l'affiche en bleu.
 display_row([], _, _).
 display_row([H|Q], Player, NbRow) :-  write(NbRow), display_char(H, Player, NbRow, 0), writeln(''), NextNbRow is NbRow+1, display_row(Q, Player, NextNbRow).
 display_char([], _, _, _).
