@@ -40,11 +40,11 @@ evalRowWithCoeffs(X,Y,Symbol,[Symbol|Q],Res):-
 evalRowWithCoeffs(X,Y,Symbol,[_|Q],Res):-
         Y1 is Y+1, evalRowWithCoeffs(X,Y1,Symbol,Q,Res).
 
-evalWithCoeffs(_,0,[],0).
+evalWithCoeffs(_,_,[],0).
 evalWithCoeffs(Player,X,[T|Q],Res):-
 	hasSymbol(Player,Symbol),evalRowWithCoeffs(X,0,Symbol,T,ResLine), 
-    evalWithCoeffs(Player,X1,Q,Res1),X is X1+1,
-    Res is Res1+ResLine.
+    X1 is X+1, evalWithCoeffs(Player,X1,Q,Res1),
+    Res is Res1+ResLine,!.
 
 getRow([Liste|_],0,Liste).
 getRow([_|NextRows],Index,Row):-
@@ -62,12 +62,14 @@ caseVide(Grid,RowIndex,ColumnIndex):-
     getRow(Grid,RowIndex,Row),caseVide(Row,ColumnIndex).
 	
 evalWithCoeffs(maxPlayer,[
-               [x,o,o,x,x,o,o,x],
-               [o,x,o,o,o,x,x,x],
-               [x,x,o,x,x,o,o,o],
-               [o,o,x,x,o,x,o,o],
-               [o,o,o,o,o,o,o,o],
-               [x,x,x,x,o,x,x,x],
-               [o,o,o,x,x,o,x,o],
-               [x,o,x,o,x,o,x,o]],
+               [x,o,o,x,x,o,o,x],       -240
+               [o,x,o,o,o,x,x,x],       -150
+               [x,x,o,x,x,o,o,o],       +32
+               [o,o,x,x,o,x,o,o],       +40
+               [o,o,o,o,o,o,o,o],       +56
+               [x,x,x,x,o,x,x,x],       +2
+               [o,o,o,x,x,o,x,o],       -550
+               [x,o,x,o,x,o,x,o]],      -420
                Res).
+			   
+			  
