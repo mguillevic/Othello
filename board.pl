@@ -2,7 +2,7 @@
 :- dynamic board/1. 
 
 %predicat appele pour lancer le jeu, il purge d'abord la memoire de l'ancien tableau, puis cree un nouveau plateau en posant les 4 premieres pieces (2 'x' et 2 'o' au milieu du plateau) puis donne la main au joueur x.
-init :- retractall(board(Board)), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 3, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 2, 2, NewBoard, x), applyIt(Board,NewBoard), play('x'), /*list_possible_correct_moves(Board, o, CorrectMoves), display_board(CorrectMoves, o),*/ !.
+init :- retractall(board(Board)), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x'), !.
 
 %sert a recuperer le joueur suivant
 opposite(x,o).
@@ -17,15 +17,23 @@ assertLength([H|Q]) :- length(H,8), assertLength(Q).
 asking_for_exit(a) :- true.
 asking_for_exit(_) :- fail.
 
+draw() :- writeln('Soit vous etes tous les deux forts et gg, soit vous etes nuls et je sais pas quoi vous dire. Dans tous les cas vous avez une egalite (ou un draw comme on le dit dans le jargon).').
+victory(Player) :- write('Bravo, le joueur '), write(Player), writeln(' a gagne !!!').
+
+%affiche le plateau, compte le nombre de pions poses par joueur puis annonce la fin de la partie
+game_over(Board) :- display_board(), count_in_row(Board, JoueurX, JoueurO), ((JoueurX>JoueurO, victory(x)) ; (JoueurX<JoueurO, victory(o)) ; draw()), !.
+
+%predicat test si le joueur peut jouer ou non, si oui on continue la procedure du tour, sinon on donne la main a l'autre joueur. Si aucun des deux joueurs ne peut jouer, la partie est terminee. 
+start_play(Player) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board)) ; game_over(Board)))).
+
 %predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
-play(Player) :- display_board(Player), board(Board), lis(Board, Player).
+play(Player, Board) :- display_board(Player), lis(Board, Player).
 
 %Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete. 
 lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer. 
-%%%il faut rajouter que s'il n'y a aucun coup possible pour le joueur 'Player', on donne la main a l'autre, et que si le jeu est fini (plateau plein ou les deux joueurs bloques), on termine l'execution en affichant le gagnant ou le draw avec les resultats
-play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), play(NewPlayer))  ;  play(Player).
+play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;  start_play(Player).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
 printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
@@ -39,11 +47,17 @@ display_row([H|Q], Player, NbRow) :-  write(NbRow), display_char(H, Player, NbRo
 display_char([], _, _, _).
 display_char([H|Q], Player, NbRow, NbCol) :-  ((board(Board), correct_move(Board, Player, NbRow, NbCol), printVal(H, fg(cyan)));printVal(H)), NextNbCol is NbCol+1, display_char(Q, Player, NbRow, NextNbCol).
 
+display_row([], _).
+display_row([H|Q], NbRow) :-  write(NbRow), display_char(H, NbRow, 0), writeln(''), NextNbRow is NbRow+1, display_row(Q, NextNbRow).
+display_char([], _, _).
+display_char([H|Q], NbRow, NbCol) :-  printVal(H), NextNbCol is NbCol+1, display_char(Q, NbRow, NextNbCol).
+
 %affichage du plateau
+display_board() :- cls, writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, 0), writeln('********').
 display_board(Player) :- cls, writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, Player, 0), writeln('********').
 display_board(B, Player) :- cls, writeln('********'), writeln(' 01234567'), display_row(B, Player, 0), writeln('********').
-cls :- true.
-%cls :- write('\e[H\e[2J').
+%cls :- true.
+cls :- write('\e[H\e[2J').
 
 %playMove met Player dans la case si elle est vide et applyIt fixe le changement dans la variable dynamique board
 playMove(Board, Row, Column, NewBoard, Player) :- NewBoard=Board, get_element(NewBoard, Row, Column, Player).
@@ -160,8 +174,6 @@ list_possible_correct_moves_row(Board, Player, NbRow, [T|Q]) :- NbRow > -1, list
 list_possible_correct_moves_row(_, _, _, []).
 
 %ce predicat sert a savoir si un joueur peut jouer ou non. Il va recuperer le tableau des cases possibles a jouer, il va ensuite le parcourir et mettre Possible a 'Y' (yes), si au moins une des cases est possible. Sinon il met Possible a 'N' (non).
-%test(Board, Player) :- (possible_to_play(Board, Player, Possible) ; true), write('can play : '), writeln(Possible), !.
-
 possible_to_play(Board, Player, Possible) :- list_possible_correct_moves(Board, Player, CorrectMoves), ((possible_to_play_in_row(CorrectMoves), Possible = 'Y') ; Possible = 'N'), !.
 
 possible_to_play_in_row([]) :- fail.
@@ -170,4 +182,9 @@ possible_to_play_in_row([T|Q]) :- possible_to_play_in_box(T) ; possible_to_play_
 possible_to_play_in_box([]) :- fail.
 possible_to_play_in_box([T|Q]) :- T = 'Y' ; possible_to_play_in_box(Q).
 
-%possible_to_play([[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x]], 'x').
+%predicat qui compte le nombre de pions de chaque joueur, il va recursivement parcourir tout le tableau (parcours chaque ligne et pour chaque ligne chaque element), et si un element est non variable, soit Joueur1 est incremente, soit Joueur2 est incremente.
+count_in_row([], Joueur1, Joueur2) :- Joueur1 is 0, Joueur2 is 0.
+count_in_row([T|Q], Joueur1, Joueur2) :- count_in_box(T, NbInRowJoueur1, NbInRowJoueur2), count_in_row(Q, NbNextJoueur1, NbNextJoueur2), Joueur1 is NbInRowJoueur1 + NbNextJoueur1, Joueur2 is NbInRowJoueur2 + NbNextJoueur2.
+
+count_in_box([], Joueur1, Joueur2) :- Joueur1 is 0, Joueur2 is 0.
+count_in_box([T|Q], Joueur1, Joueur2) :- ((var(T), NbHereJoueur1 is 0, NbHereJoueur2 is 0) ; (T = 'x', NbHereJoueur1 is 1, NbHereJoueur2 is 0) ; (T = 'o', NbHereJoueur1 is 0, NbHereJoueur2 is 1)), count_in_box(Q, NbNextJoueur1, NbNextJoueur2), Joueur1 is NbHereJoueur1 + NbNextJoueur1, Joueur2 is NbHereJoueur2 + NbNextJoueur2.
