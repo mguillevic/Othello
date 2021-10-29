@@ -158,3 +158,16 @@ list_possible_correct_moves_box(_, _, _, _, []).
 list_possible_correct_moves_row(_, _, 8, []).
 list_possible_correct_moves_row(Board, Player, NbRow, [T|Q]) :- NbRow > -1, list_possible_correct_moves_box(Board, Player, NbRow, 0, T), NextNbRow is NbRow+1, list_possible_correct_moves_row(Board, Player, NextNbRow, Q).
 list_possible_correct_moves_row(_, _, _, []).
+
+%ce predicat sert a savoir si un joueur peut jouer ou non. Il va recuperer le tableau des cases possibles a jouer, il va ensuite le parcourir et mettre Possible a 'Y' (yes), si au moins une des cases est possible. Sinon il met Possible a 'N' (non).
+%test(Board, Player) :- (possible_to_play(Board, Player, Possible) ; true), write('can play : '), writeln(Possible), !.
+
+possible_to_play(Board, Player, Possible) :- list_possible_correct_moves(Board, Player, CorrectMoves), ((possible_to_play_in_row(CorrectMoves), Possible = 'Y') ; Possible = 'N'), !.
+
+possible_to_play_in_row([]) :- fail.
+possible_to_play_in_row([T|Q]) :- possible_to_play_in_box(T) ; possible_to_play_in_row(Q).
+
+possible_to_play_in_box([]) :- fail.
+possible_to_play_in_box([T|Q]) :- T = 'Y' ; possible_to_play_in_box(Q).
+
+%possible_to_play([[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x],[x,x,x,x,x,x,x,x]], 'x').
