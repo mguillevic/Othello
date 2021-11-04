@@ -2,7 +2,10 @@
 :- dynamic board/1.
 
 %predicat appele pour lancer le jeu, il purge d'abord la memoire de l'ancien tableau, puis cree un nouveau plateau en posant les 4 premieres pieces (2 'x' et 2 'o' au milieu du plateau) puis donne la main au joueur x.
-init :- retractall(board(Board)), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x'), !.
+init :- retractall(board(Board)), game_mode(Choix), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x',Choix), !.
+
+%
+game_mode(Choix) :-write('Choix de l'),char_code(Guillemet, 39),write(Guillemet),write('heuristique :'), writeln('Random -> random.'), writeln('Duel -> duel.'), read(Choix).
 
 %sert a recuperer le joueur suivant
 opposite(x,o).
@@ -24,24 +27,24 @@ victory(Player) :- write('Bravo, le joueur '), write(Player), writeln(' a gagne 
 game_over(Board) :- display_board(), count_in_row(Board, JoueurX, JoueurO), ((JoueurX>JoueurO, victory(x)) ; (JoueurX<JoueurO, victory(o)) ; draw()), !.
 
 %predicat test si le joueur peut jouer ou non, si oui on continue la procedure du tour, sinon on donne la main a l'autre joueur. Si aucun des deux joueurs ne peut jouer, la partie est terminee.
-start_play(Player) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board)) ; game_over(Board)))).
+start_play(Player,Choix) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board,Choix)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board,Choix)) ; game_over(Board)))).
 
 %predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
-play(Player, Board) :- display_board(Player),lis_random(Board, Player).
+play(Player, Board,Choix) :- display_board(Player),((Choix='random',lis_random(Board, Player,Choix));(Choix='duel',lis(Board, Player,Choix))).
 
 %Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
-lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
+lis(Board, Player,Choix) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C,Choix)))).
 
-% Dans la suite de la methode de jeu, on recupere la case décidée par
+% Dans la suite de la methode de jeu, on recupere la case dï¿½cidï¿½e par
 % l'heuristique random. Si apres l'entree de la ligne ou de la colonne,
 % on recoit le caractere d'arret, on ne poursuit pas la fin de la
 % methode et le jeu s'arrete.
-lis_random(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C)).
+lis_random(Board, Player,Choix ):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C,Choix)).
 
 
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
-play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;  start_play(Player).
+play_procedure(Board, Player, R, C,Choix) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer,Choix))  ;  start_play(Player,Choix).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
 printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
