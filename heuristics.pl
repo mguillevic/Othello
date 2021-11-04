@@ -58,7 +58,6 @@ min_max(CurrentGrid,Player,Depth,Res,_,_):-
     evalWithCoeffs(Player,0,CurrentGrid,EvalJoueur), coeffJoueur(Player,Coeff),
     Res is EvalJoueur*Coeff.
 	
-	
 # evalWithCoeffs(maxPlayer,0,[
                # [x,o,o,x,x,o,o,x],       -240
                # [o,x,o,o,o,x,x,x],       -150
@@ -70,4 +69,8 @@ min_max(CurrentGrid,Player,Depth,Res,_,_):-
                # [x,o,x,o,x,o,x,o]],      -420
                # Res).
 			   
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%~
+
+
 			  
