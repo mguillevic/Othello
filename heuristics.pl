@@ -1,5 +1,6 @@
 :-consult(coefficients).
 :-consult(utils).
+:-consult(board).
 
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
@@ -28,36 +29,66 @@ evalWithCoeffs(Player,X,[T|Q],Res):-
     X1 is X+1, evalWithCoeffs(Player,X1,Q,Res1),
     Res is Res1+ResLine,!.
 
-liste_coordonnees(Board,List):- findall([X,Y],get_element(Board,X,Y,'Y'),List).
-
-%Renvoie le triplé [X,Y,Evaluation] pour un coup aux coordonnées X,Y.
-make_triple(Board,Player,X,Y,Triple):-
-    hasSymbol(Player,Symbol),remplacer(Board,X,Y,Symbol,NewBoard),
-    evalWithCoeffs(Player,0,NewBoard,Res), Triple=[X,Y,Res].
-
-%Pour chaque coup que peut effectuer un joueur, renvoie le triplé (X,Y,Score) avec Score l'évaluation du jeu si on met le pion aux coordonnées (X,Y).
-liste_triples(Board,Player,List):-
-    example_Board(Board),
-    hasSymbol(Player,Symbol),list_possible_correct_moves(Board,Symbol,Moves),
-    findall(Triple,(get_element(Moves,X,Y,'Y'),make_triple(Board,Player,X,Y,Triple)),List).
-
-%Soit une liste de triplés de la forme (Row,Column,Eval), on récupère celui qui a la plus grande Eval.
-%On peut ainsi déterminer, parmi une liste de coups, lequel est le plus intéressant.
-maxTriple([Triple],Triple).
-maxTriple([T|Q],R):-nth0(2,T,Eval1),maxTriple(Q,R),nth0(2,R,Eval2),Eval2>=Eval1.
-maxTriple([T|Q],T):-nth0(2,T,Eval1),maxTriple(Q,R),nth0(2,R,Eval2),Eval1>Eval2.
-
 %Dans une configuration donnée, renvoie le meilleur coup que peut faire un joueur, au sens de la fonction d'évaluation
 bestMove(Player,X,Y):-
     example_Board(Board),
 	liste_triples(Board,Player,List),maxTriple(List,Triple), 
     nth0(0,Triple,X), nth0(1,Triple,Y).
+%Soit une liste de triplés de la forme (Row,Column,Eval), on récupère celui qui a la plus grande Eval.
+%On peut ainsi déterminer, parmi une liste de coups, lequel est le plus intéressant.
+maxTriple([Triple],Triple).
+maxTriple([T|Q],R):-T==[-1,-1,u],maxTriple(Q,R). %Cas particulier où le triple est [-1,-1,u], correspond à la fin des coups possibles. On l'ignore
+maxTriple([T|Q],T):-maxTriple(Q,R),R==[-1,-1,u].
+maxTriple([T|Q],R):-nth0(2,T,Eval1),maxTriple(Q,R),nth0(2,R,Eval2),Eval2>=Eval1.
+maxTriple([T|Q],T):-nth0(2,T,Eval1),maxTriple(Q,R),nth0(2,R,Eval2), Eval1>Eval2.
 
-min_max(CurrentGrid,Player,Depth,Res,_,_):-
-    ((possible_to_play(CurrentGrid,Player,Possible),Possible='N');Depth=0),
+%Idem pour le min
+minTriple([Triple],Triple).
+minTriple([T|Q],R):-T==[-1,-1,u],minTriple(Q,R).
+minTriple([T|Q],T):-minTriple(Q,R),R==[-1,-1,u].
+minTriple([T|Q],R):-nth0(2,T,Eval1),minTriple(Q,R),nth0(2,R,Eval2),Eval2<Eval1.
+minTriple([T|Q],T):-nth0(2,T,Eval1),minTriple(Q,R),nth0(2,R,Eval2), Eval1=<Eval2.
+
+exampleBoard(Board):-
+    Board=[[_,_,_,_,_,_,_,_],
+           [_,_,_,o,_,_,_,_],
+           [_,_,_,o,_,_,_,_],
+           [_,_,o,o,o,_,_,_],
+           [_,_,_,o,x,_,_,_],
+           [_,_,_,x,_,_,_,_],
+           [_,_,_,_,_,_,_,_],
+           [_,_,_,_,_,_,_,_]
+          ]. 
+
+%Prédicat pour explorer tous les coups possibles à partir d'une situation donnée. Est appelé par l'algorithme min_max
+%Renvoie un triple [X,Y,Eval]
+explore_tree([],_,_,_,[-1,-1,u]). %Cas final, on renvoie un triple par défaut qui sera ignoré
+explore_tree([T|Q],Board,Player,Depth,ResTriple):-
+	nth0(0,T,X), nth0(1,T,Y), hasSymbol(Player,Symbol),
+	remplacer(Board,X,Y,Symbol,NewBoard), otherPlayer(Player,Other),
+	NewDepth is Depth-1,
+	min_max(NewBoard,Other,NewDepth,FinalTriple),
+	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
+	explore_tree(Q,Board,Player,Depth,OtherTriple),
+	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
+		maxTriple([CurrentTriple,OtherTriple],ResTriple);
+		minTriple([CurrentTriple,OtherTriple],ResTriple)).
+		
+%Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
+min_max(CurrentGrid,Player,Depth,Triple):-
+    hasSymbol(Player,Symbol),
+    ((possible_to_play(CurrentGrid,Symbol,Possible),Possible='N');Depth=0),
     evalWithCoeffs(Player,0,CurrentGrid,EvalJoueur), coeffJoueur(Player,Coeff),
-    Res is EvalJoueur*Coeff.
+    Res is EvalJoueur*Coeff, Triple = [-1,-1,Res].  %Seul Res nous intéresse, on renvoie -1 par convention
 	
+%Dans les autres cas, on détermine tous les coups possibles, puis on appelle récursivement min_max pour chacun d'eux
+min_max(Board,Player,Depth,BestTriple):-
+	hasSymbol(Player,Symbol),list_possible_correct_moves(Board,Symbol,Moves),
+	findall([R,C],get_element(Moves,R,C,'Y'),ListCoords),
+	explore_tree(ListCoords,Board,Player,Depth,BestTriple).
+	
+test(Result):-
+    exampleBoard(Board),min_max(Board,minPlayer,4,Result).
 	
 # evalWithCoeffs(maxPlayer,0,[
                # [x,o,o,x,x,o,o,x],       -240
