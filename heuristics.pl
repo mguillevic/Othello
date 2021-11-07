@@ -4,9 +4,8 @@
 
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
-compterPionsJoueur(Matrix,Player,Res):-
-    flatten(Matrix,Liste),hasSymbol(Player,Symbol),
-    compterSymboles(Symbol,Liste,Res).
+compterPionsJoueur(Matrix,Symbol,Res):-
+    flatten(Matrix,Liste), compterSymboles(Symbol,Liste,Res).
 
 %Pour savoir si une configuration est favorable ou non, on fait simplement la différence du nb de pions
 eval(Grid,Player,Res):-
@@ -70,14 +69,17 @@ explore_tree([T|Q],Board,Player,Depth,ResTriple):-
 		minTriple([CurrentTriple,OtherTriple],ResTriple)).
 		
 %Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
-min_max(CurrentGrid,Player,Depth,Triple):-
+min_max(CurrentGrid,Player,Depth,Triple,TypeEval):-
     hasSymbol(Player,Symbol),
     ((possible_to_play(CurrentGrid,Symbol,Possible),Possible='N');Depth=0),
-    evalWithCoeffs(Player,0,CurrentGrid,EvalJoueur), coeffJoueur(Player,Coeff),
+	(TypeEval==1 ->
+		compterPionsJoueur(CurrentGrid,Symbol,EvalJoueur);      %On choisit la fonction d'évaluation
+		evalWithCoeffs(Player,0,CurrentGrid,EvalJoueur)), 
+	coeffJoueur(Player,Coeff),
     Res is EvalJoueur*Coeff, Triple = [-1,-1,Res].  %Seul Res nous intéresse, on renvoie -1 par convention
 	
 %Dans les autres cas, on détermine tous les coups possibles, puis on appelle récursivement min_max pour chacun d'eux
-min_max(Board,Player,Depth,BestTriple):-
+min_max(Board,Player,Depth,BestTriple,TypeEval):-
 	hasSymbol(Player,Symbol),list_possible_correct_moves(Board,Symbol,Moves),
 	findall([R,C],get_element(Moves,R,C,'Y'),ListCoords),
 	explore_tree(ListCoords,Board,Player,Depth,BestTriple).
