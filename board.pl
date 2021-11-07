@@ -1,3 +1,5 @@
+:- consult(heuristics).
+
 %la variable board contient notre plateau de jeu (les cases vides contiennent _ et les autres 'x' ou 'o' selon quel joueur a pose le pion)
 :- dynamic board/1.
 
@@ -39,7 +41,7 @@ lis(Board, Player,Choix) :- write('C'), char_code(Guillemet, 39), write(Guilleme
 % l'heuristique random. Si apres l'entree de la ligne ou de la colonne,
 % on recoit le caractere d'arret, on ne poursuit pas la fin de la
 % methode et le jeu s'arrete.
-lis_random(Board, Player,Choix ):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C,Choix)).
+lis_random(Board, Player,Choix ):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuer à jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C,Choix)).
 
 
 

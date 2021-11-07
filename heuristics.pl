@@ -1,6 +1,5 @@
 :-consult(coefficients).
 :-consult(utils).
-:-consult(board).
 
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
@@ -102,7 +101,9 @@ test(Result):-
                # Res).
 			   
 
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%~
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+afficherPionsJoueur(Player):-
+    exampleBoard(Board), hasSymbol(Player,Symbol), CompterPionsJoueur(Board,Symbol,Res), 
+    write('Le joueur : '), write(Player), write('possede '), write(Res), write('pions').
 			  
