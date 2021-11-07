@@ -1,5 +1,6 @@
 :-consult(coefficients).
 :-consult(utils).
+:-consult(board).
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
 compterPionsJoueur(Matrix,Symbol,Res):-
