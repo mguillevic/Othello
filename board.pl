@@ -2,7 +2,7 @@
 :- dynamic board/1.
 %la variable choix contient le mode de jeu que le joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
 :- dynamic choix/1.
-% la variable profondeur contient la profondeur explorée dabs l'arbe
+% la variable profondeur contient la profondeur explorï¿½e dabs l'arbe
 % de recherche des coups possibles pour l'heuristique min_max que le
 % joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
 :- dynamic profondeur/1.
@@ -56,11 +56,11 @@ lis_random(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guilleme
 % l'heuristique min max. Si apres l'entree de la ligne ou de la colonne,
 % on recoit le caractere d'arret, on ne poursuit pas la fin de la
 % methode et le jeu s'arrete.
-lis_minmax(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); duel(Duel),pion(Pion),(Duel=2,(Player=Pion,lis(Board,Player));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C)));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))).
+lis_minmax(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); duel(Duel),pion(Pion),(Duel=2,(Player=Pion,lis(Board,Player));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C)));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))).
 
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
-play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;  start_play(Player).
+play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
 printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
