@@ -2,12 +2,26 @@
 
 %la variable board contient notre plateau de jeu (les cases vides contiennent _ et les autres 'x' ou 'o' selon quel joueur a pose le pion)
 :- dynamic board/1.
+%la variable choix contient le mode de jeu que le joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
+:- dynamic choix/1.
+% la variable profondeur contient la profondeur explor�e dabs l'arbe
+% de recherche des coups possibles pour l'heuristique min_max que le
+% joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
+:- dynamic profondeur/1.
+% la variable duel contient le mode de jeu (joueur contre joueur, ia
+% contre ia, joueur contre ia)
+:-dynamic duel/1.
+% la variable pion contient le symbole x ou y du joueur autre que l'ia
+:-dynamic pion/1.
+
+
+:-consult(heuristics).
 
 %predicat appele pour lancer le jeu, il purge d'abord la memoire de l'ancien tableau, puis cree un nouveau plateau en posant les 4 premieres pieces (2 'x' et 2 'o' au milieu du plateau) puis donne la main au joueur x.
-init :- retractall(board(Board)), game_mode(Choix), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x',Choix), !.
+init :- retractall(board(Board)), game_mode(), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x'), !.
 
 %
-game_mode(Choix) :-write('Choix de l'),char_code(Guillemet, 39),write(Guillemet),write('heuristique :'), writeln('Random -> random.'), writeln('Duel -> duel.'), read(Choix).
+game_mode() :- retractall(choix(Choix)),retractall(profondeur(Profondeur)),retractall(duel(Duel)),retractall(pion(Pion)),writeln('Voulez vous jouer contre un autre joueur (1.) ou contre une ia (2.) ou voir un duel entre ia (3.)'),read(Duel),assert(duel(Duel)),((Duel=1,Choix='duel',assert(choix(Choix))); (write('Choix de l'),char_code(Guillemet, 39),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix), assert(choix(Choix)),(Duel=2,(write('Voulez-vous jouez avec x ou o?'),read(Pion),assert(pion(Pion)),(Choix='min_max',write('Choix du niveau (facile/difficile/moyen)'),read(Difficulte),((Difficulte='facile',Profondeur=3);(Difficulte='difficile',Profondeur=10);(Difficulte='moyen',Profondeur=7)),assert(profondeur(Profondeur)));(Choix='random'));((Choix='min_max',write('Choix du niveau (facile/difficile/moyen)'),read(Difficulte),((Difficulte='facile',Profondeur=3);(Difficulte='difficile',Profondeur=10);(Difficulte='moyen',Profondeur=7)),assert(profondeur(Profondeur))))))).
 
 %sert a recuperer le joueur suivant
 opposite(x,o).
@@ -29,24 +43,26 @@ victory(Player) :- write('Bravo, le joueur '), write(Player), writeln(' a gagne 
 game_over(Board) :- display_board(), count_in_row(Board, JoueurX, JoueurO), ((JoueurX>JoueurO, victory(x)) ; (JoueurX<JoueurO, victory(o)) ; draw()), !.
 
 %predicat test si le joueur peut jouer ou non, si oui on continue la procedure du tour, sinon on donne la main a l'autre joueur. Si aucun des deux joueurs ne peut jouer, la partie est terminee.
-start_play(Player,Choix) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board,Choix)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board,Choix)) ; game_over(Board)))).
+start_play(Player) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board)) ; game_over(Board)))).
 
 %predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
-play(Player, Board,Choix) :- display_board(Player),((Choix='random',lis_random(Board, Player,Choix));(Choix='duel',lis(Board, Player,Choix))).
+play(Player, Board) :- display_board(Player),choix(Choix),((Choix='random',lis_random(Board, Player));(Choix='duel',lis(Board, Player));(Choix='min_max',lis_minmax(Board,Player))).
 
 %Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
-lis(Board, Player,Choix) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C,Choix)))).
+lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
 
-% Dans la suite de la methode de jeu, on recupere la case d�cid�e par
-% l'heuristique random. Si apres l'entree de la ligne ou de la colonne,
+% Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique random. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
+lis_random(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse);duel(Duel),pion(Pion), (Duel=2,(Player=Pion,lis(Board,Player));( list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))));(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C)).
+
+% Dans la suite de la methode de jeu, on recupere la case decidee par
+% l'heuristique min max. Si apres l'entree de la ligne ou de la colonne,
 % on recoit le caractere d'arret, on ne poursuit pas la fin de la
 % methode et le jeu s'arrete.
-lis_random(Board, Player,Choix ):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuer à jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C,Choix)).
-
+lis_minmax(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); duel(Duel),pion(Pion),(Duel=2,(Player=Pion,lis(Board,Player));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C)));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))).
 
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
-play_procedure(Board, Player, R, C,Choix) :- (correct_move(Board, Player, R, C), reverse_elements(Board, Player, R, C), board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer,Choix))  ;  start_play(Player,Choix).
+play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
 printVal(V, Color) :- var(V), ansi_format([bold,Color], '-', []), !.
@@ -66,9 +82,9 @@ display_char([], _, _).
 display_char([H|Q], NbRow, NbCol) :-  printVal(H), NextNbCol is NbCol+1, display_char(Q, NbRow, NextNbCol).
 
 %affichage du plateau
-display_board() :-cls, writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, 0), writeln('********').
-display_board(Player) :- cls,writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, Player, 0), writeln('********').
-display_board(B, Player) :- cls, writeln('********'), writeln(' 01234567'), display_row(B, Player, 0), writeln('********').
+display_board() :- writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, 0), writeln('********').
+display_board(Player) :- writeln('********'), writeln(' 01234567'), board(Board), display_row(Board, Player, 0), writeln('********').
+display_board(B, Player) :-  writeln('********'), writeln(' 01234567'), display_row(B, Player, 0), writeln('********').
 %cls :- true.
 cls :- write('\e[H\e[2J').
 
@@ -105,6 +121,16 @@ reverse_elements(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv
 ((board(Board7), compare_element(Board, Opposite, NbRowSuiv, NbCol), correct_bas(Board, Player, NbRowSuivSuiv, NbCol), modify_bas(Board7, Player, NbRowSuiv, NbCol, NewBoard7), applyIt(Board7, NewBoard7));true),
 ((board(Board8), compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv), modify_diag_bas_droit(Board8, Player, NbRowSuiv, NbColSuiv, NewBoard8), applyIt(Board8, NewBoard8));true)
 .
+
+reverse_elements(Board, Player, NbRow, NbCol,NewBoard8) :- NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite),
+((compare_element(Board, Opposite, NbRowPrec, NbColPrec), correct_diag_haut_gauche(Board, Player, NbRowPrecPrec, NbColPrecPrec), modify_diag_haut_gauche(Board, Player, NbRowPrec, NbColPrec, NewBoard1));NewBoard1=Board),
+((compare_element(Board, Opposite, NbRowPrec, NbCol), correct_haut(Board, Player, NbRowPrecPrec, NbCol), modify_haut(NewBoard1, Player, NbRowPrec, NbCol, NewBoard2));NewBoard2=NewBoard1),
+((compare_element(Board, Opposite, NbRowPrec, NbColSuiv), correct_diag_haut_droit(Board, Player, NbRowPrecPrec, NbColSuivSuiv), modify_diag_haut_droit(NewBoard2, Player, NbRowPrec, NbColSuiv, NewBoard3));NewBoard3=NewBoard2),
+((compare_element(Board, Opposite, NbRow, NbColPrec), correct_gauche(Board, Player, NbRow, NbColPrecPrec), modify_gauche(NewBoard3, Player, NbRow, NbColPrec, NewBoard4));NewBoard4=NewBoard3),
+((compare_element(Board, Opposite, NbRow, NbColSuiv), correct_droit(Board, Player, NbRow, NbColSuivSuiv), modify_droit(NewBoard4, Player, NbRow, NbColSuiv, NewBoard5));NewBoard5=NewBoard4),
+((compare_element(Board, Opposite, NbRowSuiv, NbColPrec), correct_diag_bas_gauche(Board, Player, NbRowSuivSuiv, NbColPrecPrec), modify_diag_bas_gauche(NewBoard5, Player, NbRowSuiv, NbColPrec, NewBoard6));NewBoard6=NewBoard5),
+((compare_element(Board, Opposite, NbRowSuiv, NbCol), correct_bas(Board, Player, NbRowSuivSuiv, NbCol), modify_bas(NewBoard6, Player, NbRowSuiv, NbCol, NewBoard7));NewBoard7=NewBoard6),
+((compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv), modify_diag_bas_droit(NewBoard7, Player, NbRowSuiv, NbColSuiv, NewBoard8));NewBoard8=NewBoard7).
 
 %la diagonale qui va vers le haut a gauche respecte le critere de placement si on trouve un pion de meme couleur avant la fin ou de trouver un vide (le premier pion de couleur differente a deja ete teste avant). Si on sort du tableau (col -1 ou lig -1), ou si un element est variable, alors la condition n'est pas respectee et on sort. Ainsi on verifie jusqu'a -1 lig ou -1 col quel est le pion actuel, s'il est variable (vide), on renvoie faux, s'il est identique au player on renvoie true, et s'il est de la couleur opposee on conyinue de chercher recursivement sur la diagonale.
 %la logique est la meme pour les 7 autres directions
