@@ -29,11 +29,6 @@ evalWithCoeffs(Player,X,[T|Q],Res):-
     X1 is X+1, evalWithCoeffs(Player,X1,Q,Res1),
     Res is Res1+ResLine,!.
 
-%Dans une configuration donnée, renvoie le meilleur coup que peut faire un joueur, au sens de la fonction d'évaluation
-bestMove(Player,X,Y):-
-    example_Board(Board),
-	liste_triples(Board,Player,List),maxTriple(List,Triple), 
-    nth0(0,Triple,X), nth0(1,Triple,Y).
 %Soit une liste de triplés de la forme (Row,Column,Eval), on récupère celui qui a la plus grande Eval.
 %On peut ainsi déterminer, parmi une liste de coups, lequel est le plus intéressant.
 maxTriple([Triple],Triple).
@@ -65,9 +60,9 @@ exampleBoard(Board):-
 explore_tree([],_,_,_,[-1,-1,u]). %Cas final, on renvoie un triple par défaut qui sera ignoré
 explore_tree([T|Q],Board,Player,Depth,ResTriple):-
 	nth0(0,T,X), nth0(1,T,Y), hasSymbol(Player,Symbol),
-	remplacer(Board,X,Y,Symbol,NewBoard), otherPlayer(Player,Other),
-	NewDepth is Depth-1,
-	min_max(NewBoard,Other,NewDepth,FinalTriple),
+	remplacer(Board,X,Y,Symbol,NewBoard), reverse_elements(NewBoard,Symbol,X,Y,NewBoard2),
+	otherPlayer(Player,Other), NewDepth is Depth-1,
+	min_max(NewBoard2,Other,NewDepth,FinalTriple),
 	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
 	explore_tree(Q,Board,Player,Depth,OtherTriple),
 	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
@@ -89,17 +84,7 @@ min_max(Board,Player,Depth,BestTriple):-
 	
 test(Result):-
     exampleBoard(Board),min_max(Board,minPlayer,4,Result).
-	
-# evalWithCoeffs(maxPlayer,0,[
-               # [x,o,o,x,x,o,o,x],       -240
-               # [o,x,o,o,o,x,x,x],       -150
-               # [x,x,o,x,x,o,o,o],       +32
-               # [o,o,x,x,o,x,o,o],       +40
-               # [o,o,o,o,o,o,o,o],       +56
-               # [x,x,x,x,o,x,x,x],       +2
-               # [o,o,o,x,x,o,x,o],       -550
-               # [x,o,x,o,x,o,x,o]],      -420
-               # Res).
+
 			   
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%~
