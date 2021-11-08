@@ -1,5 +1,6 @@
 :-consult(coefficients).
 :-consult(utils).
+:-consult(board).
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
 compterPionsJoueur(Matrix,Symbol,Res):-
@@ -43,7 +44,7 @@ minTriple([T|Q],T):-nth0(2,T,Eval1),minTriple(Q,R),nth0(2,R,Eval2), Eval1=<Eval2
 
 exampleBoard(Board):-
     Board=[[_,_,_,_,_,_,_,_],
-           [_,_,_,o,_,_,_,_],
+           [_,_,_,_,_,_,_,_],
            [_,_,_,o,_,_,_,_],
            [_,_,o,o,o,_,_,_],
            [_,_,_,o,x,_,_,_],
@@ -54,37 +55,50 @@ exampleBoard(Board):-
 
 %Prédicat pour explorer tous les coups possibles à partir d'une situation donnée. Est appelé par l'algorithme min_max
 %Renvoie un triple [X,Y,Eval]
-explore_tree([],_,_,_,_,[-1,-1,u]). %Cas final, on renvoie un triple par défaut qui sera ignoré
-explore_tree([T|Q],Board,Player,Symbol,Depth,ResTriple):-
+explore_tree([T|[]],Board,Player,Symbol,Depth,TypeEval,ResTriple):- %Cas final, on renvoie un triple par défaut qui sera ignoré
+    nth0(0,T,X), nth0(1,T,Y),
+    remplacer(Board,X,Y,Symbol,NewBoard),
+    otherPlayer(Player,Other), opposite(Symbol,Opposite),
+    NewDepth is Depth-1,
+    min_max(NewBoard,Other,Opposite,NewDepth,TypeEval,FinalTriple),
+    nth0(2,FinalTriple,Res), ResTriple=[X,Y,Res].
+
+explore_tree([T|Q],Board,Player,Symbol,Depth,TypeEval,ResTriple):-
 	nth0(0,T,X), nth0(1,T,Y),
 	remplacer(Board,X,Y,Symbol,NewBoard),
     otherPlayer(Player,Other), opposite(Symbol,Opposite),
 	NewDepth is Depth-1,
-	min_max(NewBoard,Other,Opposite,NewDepth,FinalTriple),
+	min_max(NewBoard,Other,Opposite,NewDepth,TypeEval,FinalTriple),
 	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
-	explore_tree(Q,Board,Player,Symbol,Depth,OtherTriple),
+	explore_tree(Q,Board,Player,Symbol,Depth,TypeEval,OtherTriple),
+    ((OtherTriple=[-1, -1, u], ResTriple=CurrentTriple) ;
 	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
 		((OtherTriple=[-1,-1,u], ResTriple=CurrentTriple) ; maxTriple([CurrentTriple,OtherTriple],ResTriple));
 		minTriple([CurrentTriple,OtherTriple],ResTriple)).
 
 %Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
-min_max(CurrentGrid,Player,Symbol,Depth,Triple,TypeEval):-
+min_max(CurrentGrid,Player,Symbol,Depth,TypeEval,Triple):-
     ((possible_to_play(CurrentGrid,Symbol,Possible),Possible='N');Depth=0),
-	(TypeEval==1 ->
-		compterPionsJoueur(CurrentGrid,Symbol,EvalJoueur);      %On choisit la fonction d'évaluation
-		evalWithCoeffs(Player,0,CurrentGrid,EvalJoueur)), 
+	((TypeEval=1,compterPionsJoueur(CurrentGrid,Symbol,EvalJoueur));      %On choisit la fonction d'évaluation
+		evalWithCoeffs(Symbol,0,CurrentGrid,EvalJoueur)),
 	coeffJoueur(Player,Coeff),
     Res is EvalJoueur*Coeff, Triple = [-1,-1,Res].  %Seul Res nous intéresse, on renvoie -1 par convention
 
 %Dans les autres cas, on détermine tous les coups possibles, puis on appelle récursivement min_max pour chacun d'eux
-min_max(Board,Player,Symbol,Depth,BestTriple):-
+min_max(Board,Player,Symbol,Depth,TypeEval,BestTriple):-
     list_possible_correct_moves(Board,Symbol,Moves),
 	findall([R,C],get_element(Moves,R,C,'Y'),ListCoords),
-	explore_tree(ListCoords,Board,Player,Symbol,Depth,BestTriple).
+	explore_tree(ListCoords,Board,Player,Symbol,Depth,TypeEval,BestTriple).
 
 test(Result):-
-    exampleBoard(Board),min_max(Board,minPlayer,x,1,Result).
+    exampleBoard(Board),min_max(Board,minPlayer,x,1,2,Result).
 
 
 
 
+
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+afficherPionsJoueur(Player):-
+    exampleBoard(Board), hasSymbol(Player,Symbol), CompterPionsJoueur(Board,Symbol,Res), 
+    write('Le joueur : '), write(Player), write('possede '), write(Res), write('pions').
