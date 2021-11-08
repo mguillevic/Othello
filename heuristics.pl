@@ -94,11 +94,6 @@ test(Result):-
     exampleBoard(Board),min_max(Board,minPlayer,x,1,2,Result).
 
 
-
-
-
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-afficherPionsJoueur(Player):-
-    exampleBoard(Board), hasSymbol(Player,Symbol), CompterPionsJoueur(Board,Symbol,Res), 
-    write('Le joueur : '), write(Player), write('possede '), write(Res), write('pions').
+afficherPionsJoueur(Player):- exampleBoard(Board), writeln(Board), hasSymbol(Player,Symbol), compterPionsJoueur(Board,Symbol,Res), write('Le joueur : '), write(Symbol), write('possede '), write(Res), write('pions').
