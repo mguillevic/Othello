@@ -4,15 +4,15 @@
 :- dynamic board/1.
 %la variable choix contient le mode de jeu que le joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
 :- dynamic choix/1.
-% la variable profondeur contient la profondeur explor�e dabs l'arbe
+% la variable profondeur contient la profondeur exploree dans l'arbre
 % de recherche des coups possibles pour l'heuristique min_max que le
 % joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
 :- dynamic profondeur/1.
 % la variable duel contient le mode de jeu (joueur contre joueur, ia
 % contre ia, joueur contre ia)
-:-dynamic duel/1.
+:- dynamic duel/1.
 % la variable pion contient le symbole x ou y du joueur autre que l'ia
-:-dynamic pion/1.
+:- dynamic pion/1.
 
 
 :-consult(heuristics).
@@ -21,7 +21,7 @@
 init :- retractall(board(Board)), game_mode(), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x'), !.
 
 %
-game_mode() :- retractall(choix(Choix)),retractall(profondeur(Profondeur)),retractall(duel(Duel)),retractall(pion(Pion)),writeln('Voulez vous jouer contre un autre joueur (1.) ou contre une ia (2.) ou voir un duel entre ia (3.)'),read(Duel),assert(duel(Duel)),((Duel=1,Choix='duel',assert(choix(Choix))); (write('Choix de l'),char_code(Guillemet, 39),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix), assert(choix(Choix)),(Duel=2,(write('Voulez-vous jouez avec x ou o?'),read(Pion),assert(pion(Pion)),(Choix='min_max',write('Choix du niveau (facile/difficile/moyen)'),read(Difficulte),((Difficulte='facile',Profondeur=3);(Difficulte='difficile',Profondeur=10);(Difficulte='moyen',Profondeur=7)),assert(profondeur(Profondeur)));(Choix='random'));((Choix='min_max',write('Choix du niveau (facile/difficile/moyen)'),read(Difficulte),((Difficulte='facile',Profondeur=3);(Difficulte='difficile',Profondeur=10);(Difficulte='moyen',Profondeur=7)),assert(profondeur(Profondeur))))))).
+game_mode() :- retractall(choix(Choix)),retractall(profondeur(Profondeur)),retractall(duel(Duel)),retractall(pion(Pion)),writeln('Voulez vous jouer contre un autre joueur (1.) ou contre une ia (2.) ou voir un duel entre ia (3.)'),read(Duel),assert(duel(Duel)),((Duel=1,Choix='duel',assert(choix(Choix))); (write('Choix de l'),char_code(Guillemet, 39),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix), assert(choix(Choix)),(Duel=2,(write('Voulez-vous jouer avec x ou o?'),read(Pion),assert(pion(Pion)),(Choix='min_max',write('Choix du niveau (facile/moyen/difficile)'),read(Difficulte),((Difficulte='facile',Profondeur=2);(Difficulte='difficile',Profondeur=5);(Difficulte='moyen',Profondeur=4)),assert(profondeur(Profondeur)));(Choix='random'));((Choix='min_max',write('Choix du niveau (facile/difficile/moyen)'),read(Difficulte),((Difficulte='facile',Profondeur=3);(Difficulte='difficile',Profondeur=10);(Difficulte='moyen',Profondeur=7)),assert(profondeur(Profondeur))))))).
 
 %sert a recuperer le joueur suivant
 opposite(x,o).
@@ -52,14 +52,10 @@ play(Player, Board) :- display_board(Player),choix(Choix),((Choix='random',lis_r
 lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
 
 % Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique random. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
-lis_random(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse);duel(Duel),pion(Pion), (Duel=2,(Player=Pion,lis(Board,Player));( list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))));(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C)).
+lis_random(Board, Player):- duel(Duel),pion(Pion), (Duel=2,(Player=Pion,lis(Board,Player));(write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse), asking_for_exit(Reponse);(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))));(asking_for_exit(Reponse);(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))).
 
-% Dans la suite de la methode de jeu, on recupere la case decidee par
-% l'heuristique min max. Si apres l'entree de la ligne ou de la colonne,
-% on recoit le caractere d'arret, on ne poursuit pas la fin de la
-% methode et le jeu s'arrete.
-lis_minmax(Board, Player):- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),(asking_for_exit(Reponse); duel(Duel),pion(Pion),(Duel=2,(Player=Pion,lis(Board,Player));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C)));(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))).
-
+% Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique min max. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
+lis_minmax(Board, Player):- duel(Duel),pion(Pion),(Duel=2,(Player=Pion,lis(Board,Player));(write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'),write('Continuez de jouer? (y/a)'),read(Reponse),asking_for_exit(Reponse); (profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))));(asking_for_exit(Reponse);(profondeur(Profondeur),min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C),play_procedure(Board, Player, R, C))).
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
 play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).

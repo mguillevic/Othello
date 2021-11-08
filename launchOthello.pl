@@ -1,5 +1,8 @@
 l :- launchOthello.
-launchOthello :- consult('C:/Users/marie/OneDrive/Documents/INSA/2021-2022/Cours/s1/ALIA/Projet_git/Othello/board'), init.
+launchOthello :- consult('c:/Users/Ahmed/Documents/Prolog/Othello/board'), init.
 
 c :- consultOthello.
-consultOthello :- consult('/Users/pc/Documents/INSA/4IF/ALIA/Code/Othello/board').
+consultOthello :- consult('c:/Users/Ahmed/Documents/Prolog/Othello/board').
+
+t :- testHeuristic.
+testHeuristic :- consult('c:/Users/Ahmed/Documents/Prolog/Othello/heuristics'), test(R).
