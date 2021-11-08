@@ -64,7 +64,7 @@ explore_tree([T|Q],Board,Player,Symbol,Depth,ResTriple):-
 	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
 	explore_tree(Q,Board,Player,Symbol,Depth,OtherTriple),
 	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
-		maxTriple([CurrentTriple,OtherTriple],ResTriple);
+		((OtherTriple=[-1,-1,u], ResTriple=CurrentTriple) ; maxTriple([CurrentTriple,OtherTriple],ResTriple));
 		minTriple([CurrentTriple,OtherTriple],ResTriple)).
 
 %Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
