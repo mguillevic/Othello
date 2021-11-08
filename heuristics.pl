@@ -65,10 +65,10 @@ explore_tree([T|[]],Board,Player,Symbol,Depth,TypeEval,ResTriple):- %Cas final, 
 
 explore_tree([T|Q],Board,Player,Symbol,Depth,TypeEval,ResTriple):-
 	nth0(0,T,X), nth0(1,T,Y),
-	remplacer(Board,X,Y,Symbol,NewBoard),
+	remplacer(Board,X,Y,Symbol,NewBoard), reverse_elements(NewBoard,Symbol,X,Y,NewBoard2),
     otherPlayer(Player,Other), opposite(Symbol,Opposite),
 	NewDepth is Depth-1,
-	min_max(NewBoard,Other,Opposite,NewDepth,TypeEval,FinalTriple),
+	min_max(NewBoard2,Other,Opposite,NewDepth,TypeEval,FinalTriple),
 	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
 	explore_tree(Q,Board,Player,Symbol,Depth,TypeEval,OtherTriple),
     ((OtherTriple=[-1, -1, u], ResTriple=CurrentTriple) ;

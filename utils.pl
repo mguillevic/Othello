@@ -9,8 +9,9 @@ min([T|Q],T):-min(Q,R), T=<R.
 coeffJoueur(maxPlayer,1). coeffJoueur(minPlayer,-1).
 
 compterSymboles(_,[],0).
-compterSymboles(Symbol,[Symbol|Q],Nb1):-
-     compterSymboles(Symbol,Q,Nb2),Nb1 is Nb2+1.
+compterSymboles(Symbol,[T|Q],Nb1):-
+	nonvar(T), T==Symbol,
+    compterSymboles(Symbol,Q,Nb2),Nb1 is Nb2+1.
 
 compterSymboles(Symbol,[T|Q],Nb):-
     T\==Symbol,compterSymboles(Symbol,Q,Nb).
