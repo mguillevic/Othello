@@ -1,5 +1,6 @@
 :-consult(coefficients).
 :-consult(utils).
+:-consult(board).
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
 compterPionsJoueur(Matrix,Symbol,Res):-
@@ -72,8 +73,8 @@ explore_tree([T|Q],Board,Player,Symbol,Depth,TypeEval,ResTriple):-
 	explore_tree(Q,Board,Player,Symbol,Depth,TypeEval,OtherTriple),
     ((OtherTriple=[-1, -1, u], ResTriple=CurrentTriple) ;
 	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
-		maxTriple([CurrentTriple,OtherTriple],ResTriple);
-		minTriple([CurrentTriple,OtherTriple],ResTriple))).
+		((OtherTriple=[-1,-1,u], ResTriple=CurrentTriple) ; maxTriple([CurrentTriple,OtherTriple],ResTriple));
+		minTriple([CurrentTriple,OtherTriple],ResTriple)).
 
 %Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
 min_max(CurrentGrid,Player,Symbol,Depth,TypeEval,Triple):-
