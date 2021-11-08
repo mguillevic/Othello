@@ -1,6 +1,5 @@
 :-consult(coefficients).
 :-consult(utils).
-:-consult(board).
 
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
 compterPionsJoueur(Matrix,Symbol,Res):-
@@ -65,16 +64,16 @@ explore_tree([T|[]],Board,Player,Symbol,Depth,TypeEval,ResTriple):- %Cas final, 
 
 explore_tree([T|Q],Board,Player,Symbol,Depth,TypeEval,ResTriple):-
 	nth0(0,T,X), nth0(1,T,Y),
-	remplacer(Board,X,Y,Symbol,NewBoard),
+	remplacer(Board,X,Y,Symbol,NewBoard), reverse_elements(NewBoard,Symbol,X,Y,NewBoard2),
     otherPlayer(Player,Other), opposite(Symbol,Opposite),
 	NewDepth is Depth-1,
-	min_max(NewBoard,Other,Opposite,NewDepth,TypeEval,FinalTriple),
+	min_max(NewBoard2,Other,Opposite,NewDepth,TypeEval,FinalTriple),
 	nth0(2,FinalTriple,Res), CurrentTriple=[X,Y,Res],
 	explore_tree(Q,Board,Player,Symbol,Depth,TypeEval,OtherTriple),
     ((OtherTriple=[-1, -1, u], ResTriple=CurrentTriple) ;
 	(Player==maxPlayer ->                           %Selon à qui c'est le tour, on regarde le meilleur ou le pire coup à jouer
 		((OtherTriple=[-1,-1,u], ResTriple=CurrentTriple) ; maxTriple([CurrentTriple,OtherTriple],ResTriple));
-		minTriple([CurrentTriple,OtherTriple],ResTriple)).
+		minTriple([CurrentTriple,OtherTriple],ResTriple))).
 
 %Cas d'une feuille dans l'arbre de recherche lorsque l'on ne peut plus jouer ou que la profondeur vaut 0.
 min_max(CurrentGrid,Player,Symbol,Depth,TypeEval,Triple):-
