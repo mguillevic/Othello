@@ -188,3 +188,5 @@ parcoursTree([Q|[]],Player,MaximizingPlayer,Depth,NewBoard,Res,PrecRes,A,B,PrecB
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,first):-writeln("Probleme parcoursTree").
 
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,_):-writeln("Probleme parcoursTree").
+
+getMoveAlphaBeta(Board,Player,Profondeur,BestMove) :- list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first),writeln(BestMove).

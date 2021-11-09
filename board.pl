@@ -30,8 +30,8 @@ writeln('Voulez vous jouer contre un autre joueur (1.) ou contre une ia (2.) ou 
 read(Duel),assert(duel(Duel)),
 (
 (Duel=1,Choix1='duel',assert(choix1(Choix1)),assert(choix2(Choix1)));
-(Duel=2,write('Choix de l'),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix1), assert(choix1(Choix1)),Choix2=Choix1, assert(choix2(Choix2)), (write('Voulez-vous jouer avec x ou o?'),read(Pion),assert(pion(Pion)),(Choix1='min_max',write('Choix du niveau (facile/moyen/difficile)'),read(Difficulte),niveau(Difficulte, Profondeur),assert(profondeur1(Profondeur)),assert(profondeur2(Profondeur)));(Choix1='random')));
-(Duel=3,Pion='x',assert(pion(Pion)),write('Choix de l'),write(Guillemet),write('heuristique 1 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix1), assert(choix1(Choix1)),write('Choix de l'),write(Guillemet),write('heuristique 2 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'), read(Choix2), assert(choix2(Choix2)), ((Choix1='min_max',write('Choix du niveau pour le 1 (facile/moyen/difficile)'),read(Difficulte1),niveau(Difficulte1, Profondeur1),assert(profondeur1(Profondeur1)));true), ((Choix2='min_max',write('Choix du niveau pour le 2 (facile/moyen/difficile)'),read(Difficulte2),niveau(Difficulte2, Profondeur2),assert(profondeur2(Profondeur2)));true))
+(Duel=2,write('Choix de l'),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),Choix2=Choix1, assert(choix2(Choix2)), (write('Voulez-vous jouer avec x ou o?'),read(Pion),assert(pion(Pion)),((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau (facile/moyen/difficile)'),read(Difficulte),niveau(Difficulte, Choix1, Profondeur),assert(profondeur1(Profondeur)),assert(profondeur2(Profondeur)));(Choix1='random')));
+(Duel=3,Pion='x',assert(pion(Pion)),write('Choix de l'),write(Guillemet),write('heuristique 1 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('Alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),write('Choix de l'),write(Guillemet),write('heuristique 2 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix2), assert(choix2(Choix2)), (((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau pour le 1 (facile/moyen/difficile)'),read(Difficulte1),niveau(Difficulte1, Choix1, Profondeur1),assert(profondeur1(Profondeur1)));true), (((Choix2='min_max';Choix2='alpha_beta'),write('Choix du niveau pour le 2 (facile/moyen/difficile)'),read(Difficulte2),niveau(Difficulte2, Choix2, Profondeur2),assert(profondeur2(Profondeur2)));true))
 ).
 
 %sert a recuperer le joueur suivant
@@ -39,9 +39,12 @@ opposite(x,o).
 opposite(o,x).
 
 %sert a savoir quelle profondeur par niveau de difficulte
-niveau(facile, 2).
-niveau(moyen, 4).
-niveau(difficile, 5).
+niveau(facile   , min_max   , 2).
+niveau(moyen    , min_max   , 4).
+niveau(difficile, min_max   , 5).
+niveau(facile   , alpha_beta, 5).
+niveau(moyen    , alpha_beta, 7).
+niveau(difficile, alpha_beta, 10).
 
 %fonctions appelees pour initialiser la taille du tableau.
 %assertLength([H|Q]) va donner une taille de 8 a la premiere ligne du tableau puis recursivement egalement donner une taille de 8 aux autres lignes.
@@ -62,7 +65,7 @@ game_over(Board) :- display_board(), count_in_row(Board, JoueurX, JoueurO), ((Jo
 start_play(Player) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board)) ; game_over(Board)))).
 
 %predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
-play(Player, Board) :- display_board(Player),choix1(Choix1),choix2(Choix2), ((Choix1='duel',lis(Board, Player));(duel(Duel),pion(Pion),((Duel=2, Pion=Player,lis(Board, Player));(Player=Pion,Choix1='random',lis_random(Board, Player));(Player=Pion,Choix1='min_max',lis_minmax(Board, Player));(Choix2='random',lis_random(Board, Player));(Choix2='min_max',lis_minmax(Board, Player))))).
+play(Player, Board) :- display_board(Player),choix1(Choix1),choix2(Choix2), ((Choix1='duel',lis(Board, Player));(duel(Duel),pion(Pion),((Duel=2, Pion=Player,lis(Board, Player));(Player=Pion,Choix1='random',lis_random(Board, Player));(Player=Pion,Choix1='min_max',lis_minmax(Board, Player));(Player=Pion,Choix1='alpha_beta',lis_alphabeta(Board, Player));(Choix2='random',lis_random(Board, Player));(Choix2='min_max',lis_minmax(Board, Player));(Choix2='alpha_beta',lis_alphabeta(Board, Player))))).
 
 %Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
 lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
@@ -71,9 +74,9 @@ lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), wr
 lis_random(Board, Player):- duel(Duel), write('random joue '), write(Player), writeln(' :'), ((Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((Duel=3, asking_for_exit(Reponse));(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))).
 
 % Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique min max. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
-%lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('min_max joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure(Board, Player, R, C))).
+lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('min_max joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure(Board, Player, R, C))).
 
-lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('alpha_beta joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first),nth0(0,BestMove,R),nth0(1,BestMove,C), play_procedure(Board, Player, R, C))).
+lis_alphabeta(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('alpha_beta joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (getMoveAlphaBeta(Board,Player,Profondeur,BestMove),nth0(0,BestMove,R),nth0(1,BestMove,C), play_procedure(Board, Player, R, C))).
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
 play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).
