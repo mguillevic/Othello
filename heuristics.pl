@@ -96,3 +96,37 @@ test(Result):-
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 afficherPionsJoueur(Player):- exampleBoard(Board), writeln(Board), hasSymbol(Player,Symbol), compterPionsJoueur(Board,Symbol,Res), write('Le joueur : '), write(Symbol), write('possede '), write(Res), write('pions').
+
+parcoursTree(T,[],_,MaximizingPlayer,_,Board,Res,_,_,_):-eval(Board,MaximizingPlayer,Res).
+
+parcoursTree(T,_,_,MaximizingPlayer,0,Board,Res,_,_,_):-eval(Board,MaximizingPlayer,Res).
+
+parcoursTree(T,[Q1|Q3],Player,Player,Depth,Board,Res,PrecRes,A,B):-
+    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
+    (([Q|Q2]=Q1, parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,Board,ResE,_,MyA,MyB)); parcoursTree(Q1,[],_,MaximizingPlayer,_,Board,ResE,_,MyA,MyB)),
+    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA),
+    ((MyB>MyNewA, parcoursTree(T,Q3,Player,Player,Depth,Board,ResE,NewMaxEval,MyNewA,MyB), Res is ResF);
+    Res is NewMaxEval).
+
+parcoursTree(T,[Q1|Q3],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B):-
+    opposite(Player,MaximizingPlayer), 
+    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf),
+    NewDepth is Depth-1, MyA is A, MyB is B,
+    (([Q|Q2]=Q1, parcoursTree(Q,Q2,MaximizingPlayer,NewDepth,Board,ResE,_,MyA,MyB)); parcoursTree(Q1,[],_,MaximizingPlayer,_,Board,ResE,_,MyA,MyB)),
+    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),
+    ((MyNewB>MyA, parcoursTree(T,Q3,Player,MaximizingPlayer,Depth,Board,ResF,NewMinEval,MyA,MyNewB), Res is ResF);
+    Res is NewMinEval).
+
+parcoursTree(T,[Q|[]],Player,Player,Depth,Board,Res,PrecRes,A,B):- 
+    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
+    (([Q|Q2]=Q1, parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,Board,ResE,_,MyA,MyB)); parcoursTree(Q1,[],_,MaximizingPlayer,_,Board,ResE,_,MyA,MyB)),
+    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA), Res is NewMaxEval.
+
+parcoursTree(T,[Q|[]],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B):-
+    opposite(Player,MaximizingPlayer),
+    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf), NewDepth is Depth-1, MyA is A, MyB is B,
+    (([Q|Q2]=Q1, parcoursTree(Q,Q2,MaximizingPlayer,NewDepth,Board,ResE,_,MyA,MyB)); parcoursTree(Q1,[],_,MaximizingPlayer,_,Board,ResE,_,MyA,MyB)),
+    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),
+    Res is NewMinEval.
+
+parcoursTree(_,_,_,_,_,_,_,_,_,_):-writeln("Probleme parcoursTree").
