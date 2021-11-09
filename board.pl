@@ -71,7 +71,9 @@ lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), wr
 lis_random(Board, Player):- duel(Duel), write('random joue '), write(Player), writeln(' :'), ((Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((Duel=3, asking_for_exit(Reponse));(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))).
 
 % Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique min max. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
-lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('min_max joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure(Board, Player, R, C))).
+%lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('min_max joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure(Board, Player, R, C))).
+
+lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('alpha_beta joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first),nth0(0,BestMove,R),nth0(1,BestMove,C), play_procedure(Board, Player, R, C))).
 
 %Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
 play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).
@@ -224,6 +226,17 @@ list_possible_correct_moves_row(_, _, 8, []).
 list_possible_correct_moves_row(Board, Player, NbRow, [T|Q]) :- NbRow > -1, list_possible_correct_moves_box(Board, Player, NbRow, 0, T), NextNbRow is NbRow+1, list_possible_correct_moves_row(Board, Player, NextNbRow, Q).
 list_possible_correct_moves_row(_, _, _, []).
 
+
+list_possible_correct_moves2(Board, Player, CorrectMoves) :- list_possible_correct_moves_row2(Board, Player, 0, CorrectMoves, []),!.
+
+list_possible_correct_moves_box2(_, _, NbRow, 8, Res, PrecRes) :-NbRow > -1, Res=PrecRes.
+list_possible_correct_moves_box2(Board, Player, NbRow, NbCol, Res, PrecRes) :-NbRow > -1, NbCol > -1, ((correct_move(Board, Player, NbRow, NbCol), ResAfter=[[NbRow,NbCol]|PrecRes]) ; ResAfter=PrecRes), NbColSuiv is NbCol + 1, list_possible_correct_moves_box2(Board, Player, NbRow, NbColSuiv, Res, ResAfter).
+list_possible_correct_moves_box2(_, _, _, _, _, _).
+
+list_possible_correct_moves_row2(_, _, 8, PrecRes, PrecRes).
+list_possible_correct_moves_row2(Board, Player, NbRow, Res, PrecRes) :-NbRow > -1, list_possible_correct_moves_box2(Board, Player, NbRow, 0, AfterRes, PrecRes), NextNbRow is NbRow+1,list_possible_correct_moves_row2(Board, Player, NextNbRow, Res, AfterRes).
+list_possible_correct_moves_row2(_, _, _, _, _).
+
 %ce predicat sert a savoir si un joueur peut jouer ou non. Il va recuperer le tableau des cases possibles a jouer, il va ensuite le parcourir et mettre Possible a 'Y' (yes), si au moins une des cases est possible. Sinon il met Possible a 'N' (non).
 possible_to_play(Board, Player, Possible) :- list_possible_correct_moves(Board, Player, CorrectMoves),((possible_to_play_in_row(CorrectMoves), Possible = 'Y') ; Possible = 'N'), !.
 
@@ -242,3 +255,15 @@ count_in_box([T|Q], Joueur1, Joueur2) :- ((var(T), NbHereJoueur1 is 0, NbHereJou
 
 liste_coordinates_correct_moves(CorrectMoves,R,C):-findall([X,Y],get_element(CorrectMoves, X, Y, 'Y'),ListesCoord),random_move(ListesCoord,R,C).
 random_move(ListesCoord,R,C):-random_member(Coord,ListesCoord),nth0(0,Coord,R),nth0(1,Coord,C).
+
+test_list_possible_correct_moves(CorrectMoves) :- Board=[
+                                                            [o,o,o,o,o,o,_,_],
+                                                            [o,o,x,x,x,o,_,x],
+                                                            [o,x,o,o,x,o,o,x],
+                                                            [o,x,o,o,o,o,o,x],
+                                                            [o,x,o,o,o,o,o,x],
+                                                            [o,x,o,o,x,o,o,x],
+                                                            [o,x,x,x,x,x,o,x],
+                                                            [o,x,x,x,x,x,x,x]
+                                                        ],
+                                                    Player=o, list_possible_correct_moves_row2(Board, Player, 0, CorrectMoves, []).
