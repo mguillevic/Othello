@@ -16,15 +16,15 @@ play_procedure_ia(Board, Player, R, C) :- (correct_move(Board, Player, R, C),rev
 
 %Ajouter le prédicat pour jouer un coup avec alphabeta
 play_ia(Player, Board) :- 
-		%((Player=x, ia_minmax(Board,Player,3,2));ia_alpha_beta(Board,Player,Depth,TypeEval)).
+		%((Player=x, ia_minmax(Board,Player,3,2));ia_alpha_beta(Board,Player,Depth)).
 
 ia_random(Board, Player):- list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure_ia(Board, Player, R, C).
 
 
 ia_minmax(Board, Player,Depth,TypeEval):- min_max(Board,maxPlayer,Player,Depth,TypeEval,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure_ia(Board, Player, R, C).
 
-%ia_alpha_beta(Board,Player,Depth,TypeEval):-
-	%getMoveAlphaBeta(Board,Player,Depth,TypeEval,R,C), play_procedure_ia(Board,Player,R,C).
+%ia_alpha_beta(Board,Player,Depth):-
+	%getMoveAlphaBeta(Board,Player,Depth,R,C), play_procedure_ia(Board,Player,R,C).
 
 do_ten_game:-
 	init_ia,init_ia,init_ia,init_ia,init_ia,init_ia,init_ia,init_ia,init_ia,init_ia.
