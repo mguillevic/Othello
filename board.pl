@@ -2,36 +2,35 @@
 
 %la variable board contient notre plateau de jeu (les cases vides contiennent _ et les autres 'x' ou 'o' selon quel joueur a pose le pion)
 :- dynamic board/1.
-%la variable choix contient le mode de jeu que le joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
+%les variables choix nous disent qui va jouer autre que le joueur s'il s'agit d'IA. On aura par exemple choix1=minmax et choix2=random dans le cas d'un match IA vs IA. Dans le cas du joueur contre une IA, les deux variables sont confondues et contiennent l'adversaire, et dans le cas ou deux joueurs reels jouent l'un contre l'autre, les variables sont juste instanciees a duel.
 :- dynamic choix1/1.
 :- dynamic choix2/1.
-% la variable profondeur contient la profondeur exploree dans l'arbre
-% de recherche des coups possibles pour l'heuristique min_max que le
-% joueur souhaite (match avec quelqu'un ou heuristique VS heuristique)
+% les variables profondeur contiennent la profondeur exploree dans l'arbre de recherche des coups possibles par les heuristique min_max et alpha_beta enregistres dans choix.
 :- dynamic profondeur1/1.
 :- dynamic profondeur2/1.
-% la variable duel contient le mode de jeu (joueur contre joueur, ia
-% contre ia, joueur contre ia)
+% la variable duel contient le mode de jeu (joueur contre joueur, ia contre ia ou joueur contre ia)
 :- dynamic duel/1.
-% la variable pion contient le symbole x ou y du joueur autre que l'ia
+% la variable pion contient le symbole x ou y du joueur autre que l'ia.
 :- dynamic pion/1.
-
-
-:-consult(heuristics).
 
 %predicat appele pour lancer le jeu, il purge d'abord la memoire de l'ancien tableau, puis cree un nouveau plateau en posant les 4 premieres pieces (2 'x' et 2 'o' au milieu du plateau) puis donne la main au joueur x.
 init :- retractall(board(Board)), game_mode(), length(Board,8), assertLength(Board), assert(board(Board)),playMove(Board, 4, 4, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 3, NewBoard, x), applyIt(Board,NewBoard), playMove(Board, 3, 4, NewBoard, o), applyIt(Board,NewBoard), playMove(Board, 4, 3, NewBoard, o), applyIt(Board,NewBoard), start_play('x'), !.
 
-%
+% ce predicat sert a initialiser le type de match : on demandera par exemple au joueur contre qui il veut jouer, et s'il choisit des IAs, lesquelles et avec quels parametres.
 game_mode() :- 
-
 retractall(choix1(Choix)),retractall(choix2(Choix)),retractall(profondeur1(Profondeur)),retractall(profondeur2(Profondeur)),retractall(duel(Duel)),retractall(pion(Pion)),char_code(Guillemet, 39),
 writeln('Voulez vous jouer contre un autre joueur (1.) ou contre une ia (2.) ou voir un duel entre ia (3.)'),
 read(Duel),assert(duel(Duel)),
+%Selon le mode de jeu choisi, les variables sont instanciees differemment
 (
-(Duel=1,Choix1='duel',assert(choix1(Choix1)),assert(choix2(Choix1)));
-(Duel=2,write('Choix de l'),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),Choix2=Choix1, assert(choix2(Choix2)), (write('Voulez-vous jouer avec x ou o?'),read(Pion),assert(pion(Pion)),((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau (facile/moyen/difficile)'),read(Difficulte),niveau(Difficulte, Choix1, Profondeur),assert(profondeur1(Profondeur)),assert(profondeur2(Profondeur)));(Choix1='random')));
-(Duel=3,Pion='x',assert(pion(Pion)),write('Choix de l'),write(Guillemet),write('heuristique 1 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('Alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),write('Choix de l'),write(Guillemet),write('heuristique 2 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix2), assert(choix2(Choix2)), (((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau pour le 1 (facile/moyen/difficile)'),read(Difficulte1),niveau(Difficulte1, Choix1, Profondeur1),assert(profondeur1(Profondeur1)));true), (((Choix2='min_max';Choix2='alpha_beta'),write('Choix du niveau pour le 2 (facile/moyen/difficile)'),read(Difficulte2),niveau(Difficulte2, Choix2, Profondeur2),assert(profondeur2(Profondeur2)));true))
+    %Dans le cas d'un duel entre deux vrais joueurs, on a pas vraiment besoin de variables.
+    (Duel=1,Choix1='duel',assert(choix1(Choix1)),assert(choix2(Choix1)));
+
+    %Dans le cas d'un match contre l'IA, on a besoin de savoir contre qui le joueur souhaite jouer, et en fonction de la reponse, on demande les parametres specifiques.
+    (Duel=2,write('Choix de l'),write(Guillemet),write('heuristique :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),Choix2=Choix1, assert(choix2(Choix2)), (write('Voulez-vous jouer avec x ou o?'),read(Pion),assert(pion(Pion)),((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau (facile/moyen/difficile)'),read(Difficulte),niveau(Difficulte, Choix1, Profondeur),assert(profondeur1(Profondeur)),assert(profondeur2(Profondeur)));(Choix1='random')));
+
+    %Dans le cas d'un duel entre deux IAs, on a besoin de connaitre leurs deux types ainsi que leurs caracteristiques de maniere similaire au cas juste au dessus. Il faut juste tout demander en double.
+    (Duel=3,Pion='x',assert(pion(Pion)),write('Choix de l'),write(Guillemet),write('heuristique 1 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('Alpha beta -> alpha_beta.'), read(Choix1), assert(choix1(Choix1)),write('Choix de l'),write(Guillemet),write('heuristique 2 :'), writeln('Random -> random.'),writeln('min et max -> min_max.'),writeln('alpha beta -> alpha_beta.'), read(Choix2), assert(choix2(Choix2)), (((Choix1='min_max';Choix1='alpha_beta'),write('Choix du niveau pour le 1 (facile/moyen/difficile)'),read(Difficulte1),niveau(Difficulte1, Choix1, Profondeur1),assert(profondeur1(Profondeur1)));true), (((Choix2='min_max';Choix2='alpha_beta'),write('Choix du niveau pour le 2 (facile/moyen/difficile)'),read(Difficulte2),niveau(Difficulte2, Choix2, Profondeur2),assert(profondeur2(Profondeur2)));true))
 ).
 
 %sert a recuperer le joueur suivant
@@ -51,10 +50,11 @@ niveau(difficile, alpha_beta, 5).
 assertLength([]).
 assertLength([H|Q]) :- length(H,8), assertLength(Q).
 
-%si la methode recoit le caractere d'arret (ici 'a'), on reussi le test, sinon il fail.
+%si la methode recoit le caractere d'arret (ici 'a' pour abort), on reussi le test, sinon il fail.
 asking_for_exit(a) :- true.
 asking_for_exit(_) :- fail.
 
+%predicats executes a la fin du jeu.
 draw() :- writeln('Egalite !!! Bravo a tous les deux').
 victory(Player) :- write('Bravo, le joueur '), write(Player), writeln(' a gagne !!!').
 
@@ -64,21 +64,22 @@ game_over(Board) :- display_board(), count_in_row(Board, JoueurX, JoueurO), ((Jo
 %predicat test si le joueur peut jouer ou non, si oui on continue la procedure du tour, sinon on donne la main a l'autre joueur. Si aucun des deux joueurs ne peut jouer, la partie est terminee.
 start_play(Player) :- board(Board), possible_to_play(Board, Player, Possible) , ((Possible = 'Y', play(Player, Board)) ; (opposite(Player, OppositePlayer), possible_to_play(Board, OppositePlayer, OtherPossible), ((OtherPossible='Y', play(OppositePlayer, Board)) ; game_over(Board)))).
 
-%predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu.
+%predicat qui fait joueur les joueurs. On affiche d'abord l'etat courant du plateau puis appel la suite de la methode de jeu. La suite dependant du type de joueur, on distingue les cas grace aux variables dynamiques et on fait appel au bon predicat. Il s'agit des predicats 'lis'. On a juste 'lis' pour le vrai joueur et 'lit_ia' pour chaque IA.
 play(Player, Board) :- display_board(Player),choix1(Choix1),choix2(Choix2), ((Choix1='duel',lis(Board, Player));(duel(Duel),pion(Pion),((Duel=2, Pion=Player,lis(Board, Player));(Player=Pion,Choix1='random',lis_random(Board, Player));(Player=Pion,Choix1='min_max',lis_minmax(Board, Player));(Player=Pion,Choix1='alpha_beta',lis_alphabeta(Board, Player));(Choix2='random',lis_random(Board, Player));(Choix2='min_max',lis_minmax(Board, Player));(Choix2='alpha_beta',lis_alphabeta(Board, Player))))).
 
-%Dans la suite de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
+%Dans la suite 'joueur' de la methode de jeu, on recupere la case ou le joueur veut poser sa piece. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
 lis(Board, Player) :- write('C'), char_code(Guillemet, 39), write(Guillemet), write('est le tour de '), write(Player), writeln(' :'), write('Ligne'), read(R), (asking_for_exit(R) ; (write('Colonne'), read(C), (asking_for_exit(C) ; play_procedure(Board, Player, R, C)))).
 
-% Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique random. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
+% Dans la suite 'random' de la methode de jeu, on recupere la case decidee par l'heuristique random. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
 lis_random(Board, Player):- duel(Duel), write('random joue '), write(Player), writeln(' :'), ((Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((Duel=3, asking_for_exit(Reponse));(list_possible_correct_moves(Board, Player, CorrectMoves),liste_coordinates_correct_moves(CorrectMoves,R,C),play_procedure(Board, Player, R, C))).
 
-% Dans la suite de la methode de jeu, on recupere la case decidee par l'heuristique min max. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
+% Dans la suite 'min_max' de la methode de jeu, on recupere la case decidee par l'heuristique min max. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
 lis_minmax(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('min_max joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (min_max(Board,maxPlayer,Player,Profondeur,1,BestTriple),nth0(0,BestTriple,R),nth0(1,BestTriple,C), play_procedure(Board, Player, R, C))).
 
+% Dans la suite 'alpha_beta' de la methode de jeu, on recupere la case decidee par l'heuristique alpha beta. Si apres l'entree de la ligne ou de la colonne, on recoit le caractere d'arret, on ne poursuit pas la fin de la methode et le jeu s'arrete.
 lis_alphabeta(Board, Player):- ((pion(Pion), Pion=Player,profondeur1(Profondeur));profondeur2(Profondeur)), write('alpha_beta joue '), write(Player), write(' avec une profondeur de '), write(Profondeur), writeln(' :'), ((duel(Duel), Duel=3, write('Continuer a jouer? (y/a)'),read(Reponse));true), ((duel(Duel), Duel=3, asking_for_exit(Reponse)); (getMoveAlphaBeta(Board,Player,Profondeur,BestMove),nth0(0,BestMove,R),nth0(1,BestMove,C), play_procedure(Board, Player, R, C))).
 
-%Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer.
+%Dans la fin de la methode de jeu, on distingue deux cas : si le coup est valide, on l'execute et donne la main a l'autre joueur, sinon on ne fait rien et redonne la main au joueur ayant essaye de jouer. L'execution du coup se separe en deux partie : reverse_elements qui retourne les pions adverses puis playMove qui pose le pion.
 play_procedure(Board, Player, R, C) :- (correct_move(Board, Player, R, C),reverse_elements(Board, Player, R, C),board(NewBoard), playMove(NewBoard, R, C, NewNewBoard, Player), applyIt(NewBoard,NewNewBoard), opposite(Player, NewPlayer), start_play(NewPlayer))  ;start_play(Player).
 
 %sert a l'affichage des cases, si la case est vide, on affiche '-', sinon on affiche son contenu
@@ -105,7 +106,8 @@ display_board(B, Player) :-  writeln('********'), writeln(' 01234567'), display_
 %cls :- true.
 cls :- write('\e[H\e[2J').
 
-%playMove met Player dans la case si elle est vide et applyIt fixe le changement dans la variable dynamique board
+%playMove met Player dans la case si elle est vide et applyIt fixe le changement dans la variable dynamique board.
+%On utilise un copy_term au lieu de Board=NewBoard pour ne pas lier les deux. Dans l'alpha_beta on a besoin d'utiliser le Board initial apres un playMove.
 playMove(Board, Row, Column, NewBoard, Player) :- copy_term(Board, NewBoard), get_element(NewBoard, Row, Column, Player).
 applyIt(Board,NewBoard) :- retract(board(Board)), assert(board(NewBoard)).
 
@@ -128,6 +130,7 @@ correct_move(Board, Player, NbRow, NbCol) :- get_element(Board, NbRow, NbCol, Va
 (compare_element(Board, Opposite, NbRowSuiv, NbCol), correct_bas(Board, Player, NbRowSuivSuiv, NbCol));
 (compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv))).
 
+%reverse_elements est un peu similaire a correct_move, il verifie si chaque direction autour du pion est correcte puis on retourne les pions adverses.
 reverse_elements(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite),
 ((compare_element(Board, Opposite, NbRowPrec, NbColPrec), correct_diag_haut_gauche(Board, Player, NbRowPrecPrec, NbColPrecPrec), modify_diag_haut_gauche(Board, Player, NbRowPrec, NbColPrec, NewBoard), applyIt(Board, NewBoard));true),
 ((board(Board2), compare_element(Board, Opposite, NbRowPrec, NbCol), correct_haut(Board, Player, NbRowPrecPrec, NbCol), modify_haut(Board2, Player, NbRowPrec, NbCol, NewBoard2), applyIt(Board2, NewBoard2));true),
@@ -139,6 +142,7 @@ reverse_elements(Board, Player, NbRow, NbCol) :- NbRowPrec is NbRow-1, NbRowSuiv
 ((board(Board8), compare_element(Board, Opposite, NbRowSuiv, NbColSuiv), correct_diag_bas_droit(Board, Player, NbRowSuivSuiv, NbColSuivSuiv), modify_diag_bas_droit(Board8, Player, NbRowSuiv, NbColSuiv, NewBoard8), applyIt(Board8, NewBoard8));true)
 .
 
+%ce reverse_elements est identique au precedent a la difference pres qu'il ne fixe pas dans la variable dynamique board. Il reverse les pions adverse dans un nouveau plateau qu'il renvoie. On reverse les pions avec les predicats modify_... plus bas.
 reverse_elements(Board, Player, NbRow, NbCol,NewBoard8) :- NbRowPrec is NbRow-1, NbRowSuiv is NbRow+1, NbColPrec is NbCol-1, NbColSuiv is NbCol+1, NbRowPrecPrec is NbRow-2, NbColPrecPrec is NbCol-2, NbRowSuivSuiv is NbRow+2, NbColSuivSuiv is NbCol+2, opposite(Player, Opposite),
 ((compare_element(Board, Opposite, NbRowPrec, NbColPrec), correct_diag_haut_gauche(Board, Player, NbRowPrecPrec, NbColPrecPrec), modify_diag_haut_gauche(Board, Player, NbRowPrec, NbColPrec, NewBoard1));NewBoard1=Board),
 ((compare_element(Board, Opposite, NbRowPrec, NbCol), correct_haut(Board, Player, NbRowPrecPrec, NbCol), modify_haut(NewBoard1, Player, NbRowPrec, NbCol, NewBoard2));NewBoard2=NewBoard1),
@@ -229,7 +233,7 @@ list_possible_correct_moves_row(_, _, 8, []).
 list_possible_correct_moves_row(Board, Player, NbRow, [T|Q]) :- NbRow > -1, list_possible_correct_moves_box(Board, Player, NbRow, 0, T), NextNbRow is NbRow+1, list_possible_correct_moves_row(Board, Player, NextNbRow, Q).
 list_possible_correct_moves_row(_, _, _, []).
 
-
+%liste tous les coups possible d'un joueur comme le predicat precedent mais avec un format de retour different. On a un tableau qui contient les coordonnees des cases ou il est possible de jouer : [[x1,y1],[x2,y2],[x3,y3],...]. L'algorithme de parcours est identique au precedent.
 list_possible_correct_moves2(Board, Player, CorrectMoves) :- list_possible_correct_moves_row2(Board, Player, 0, CorrectMoves, []),!.
 
 list_possible_correct_moves_box2(_, _, NbRow, 8, Res, PrecRes) :-NbRow > -1, Res=PrecRes.
@@ -257,16 +261,3 @@ count_in_box([], Joueur1, Joueur2) :- Joueur1 is 0, Joueur2 is 0.
 count_in_box([T|Q], Joueur1, Joueur2) :- ((var(T), NbHereJoueur1 is 0, NbHereJoueur2 is 0) ; (T = 'x', NbHereJoueur1 is 1, NbHereJoueur2 is 0) ; (T = 'o', NbHereJoueur1 is 0, NbHereJoueur2 is 1)), count_in_box(Q, NbNextJoueur1, NbNextJoueur2), Joueur1 is NbHereJoueur1 + NbNextJoueur1, Joueur2 is NbHereJoueur2 + NbNextJoueur2.
 
 liste_coordinates_correct_moves(CorrectMoves,R,C):-findall([X,Y],get_element(CorrectMoves, X, Y, 'Y'),ListesCoord),random_move(ListesCoord,R,C).
-random_move(ListesCoord,R,C):-random_member(Coord,ListesCoord),nth0(0,Coord,R),nth0(1,Coord,C).
-
-test_list_possible_correct_moves(CorrectMoves) :- Board=[
-                                                            [o,o,o,o,o,o,_,_],
-                                                            [o,o,x,x,x,o,_,x],
-                                                            [o,x,o,o,x,o,o,x],
-                                                            [o,x,o,o,o,o,o,x],
-                                                            [o,x,o,o,o,o,o,x],
-                                                            [o,x,o,o,x,o,o,x],
-                                                            [o,x,x,x,x,x,o,x],
-                                                            [o,x,x,x,x,x,x,x]
-                                                        ],
-                                                    Player=o, list_possible_correct_moves_row2(Board, Player, 0, CorrectMoves, []).

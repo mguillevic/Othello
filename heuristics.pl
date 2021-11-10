@@ -1,6 +1,9 @@
 :-consult(coefficients).
 :-consult(utils).
 
+%fonction qui renvoie un coup random parmi une liste de coups autorises
+random_move(ListesCoord,R,C):-random_member(Coord,ListesCoord),nth0(0,Coord,R),nth0(1,Coord,C).
+
 %Fonction d'évaluation simple qui compte juste le nombre de pions que possède le joueur donné
 compterPionsJoueur(Matrix,Symbol,Res):-
     flatten(Matrix,Liste), compterSymboles(Symbol,Liste,Res).
@@ -93,9 +96,12 @@ test(Result):-
     exampleBoard(Board),min_max(Board,minPlayer,x,1,2,Result).
 
 
+afficherPionsJoueur(Player):- exampleBoard(Board), writeln(Board), hasSymbol(Player,Symbol), compterPionsJoueur(Board,Symbol,Res), write('Le joueur : '), write(Symbol), write('possede '), write(Res), write('pions').
+
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ALPHA - BETA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-afficherPionsJoueur(Player):- exampleBoard(Board), writeln(Board), hasSymbol(Player,Symbol), compterPionsJoueur(Board,Symbol,Res), write('Le joueur : '), write(Symbol), write('possede '), write(Res), write('pions').
+%Le but des parcoursTree est comme min max de trouver le meilleur coup, mais en elaguant l'arbre de recherche. Ainsi, pour chaque noeud, on parcourt tous ses enfants, mais on a une condition d'arret qui peut nous arreter en plein milieu. En effet le principe de l'algorithme alpha-beta est de detecter certaines parties de l'arbre qui sont inutiles a parcourir.
+%Chaque fois qu'on arrive dans un predicat, on a le noeud actuel (T) et la liste de ses enfants en second parametre. Le but est de parcourir tous ses enfants (en s'arretant potentiellement si la condition d'arret alpha>=beta est verifiee). Pour ce faire, on parcourt le premier enfant du noeud puis on se refait appel a soi meme en enlevant le head des enfants. Ainsi, le prochain appel va appeler le second enfant, puis va faire un autre appel qui va appeler le troisieme enfant et ainsi de suite. La condition d'arret est qu'on recoit une liste composee d'un unique enfant, dans ce cas la on va l'appeler puis on va depiler. Ce depilement va permettre de renvoyer la valeur d'evaluation du noeud jusqu'au debut.
 
 parcoursTree(T,[],Player,MaximizingPlayer,_,Board,Res,_,_,_,_,_):-T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),evalWithCoeffs(MaximizingPlayer,0,NewBoard,Res).%eval(NewBoard,MaximizingPlayer,Res).
 
@@ -140,7 +146,7 @@ opposite(Player,MaximizingPlayer), T=[R,C],
     ((MyNewB>MyA, parcoursTree(T,Q3,Player,MaximizingPlayer,Depth,Board,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove), Res is ResF);
     Res is NewMinEval).
 
-
+%On a besoin de distinguer le cas du premier appel a alpha_beta des autres. En effet, pour le premier appel, on a juste un etat et pas de coup initial. Le fonctionnement est identique aux predicats du dessus a la difference qu'on n'effectue pas de coup initial au debut.
 parcoursTree([Q|[]],Player,Player,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):- 
     ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
     Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
@@ -175,8 +181,10 @@ parcoursTree([Q1|Q3],Player,MaximizingPlayer,Depth,NewBoard,Res,PrecRes,A,B,Prec
     ((MyNewB>MyA, parcoursTree(Q3,Player,MaximizingPlayer,Depth,NewBoard,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove,first), Res is ResF);
     Res is NewMinEval).
 
+%Si aucun des predicats du dessus n'est reconnu (ce qui ne serait pas normal), on tombe dans ces predicats qui nous previennent parce qu'on pourrait ne meme pas le remarquer. Ca aide surtout pour le debug mais pas necessaire en soi pour le jeu.
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,first):-writeln("Probleme parcoursTree").
 
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,_):-writeln("Probleme parcoursTree").
 
+%predicat appele pour recuperer le meilleur coup. Il va faire appel au parcours de l'arbre a partir de l'etat du plateau donne en parametre.
 getMoveAlphaBeta(Board,Player,Profondeur,BestMove) :- list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first).
