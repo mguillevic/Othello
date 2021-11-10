@@ -42,9 +42,9 @@ opposite(o,x).
 niveau(facile   , min_max   , 2).
 niveau(moyen    , min_max   , 4).
 niveau(difficile, min_max   , 5).
-niveau(facile   , alpha_beta, 5).
-niveau(moyen    , alpha_beta, 7).
-niveau(difficile, alpha_beta, 10).
+niveau(facile   , alpha_beta, 2).
+niveau(moyen    , alpha_beta, 4).
+niveau(difficile, alpha_beta, 5).
 
 %fonctions appelees pour initialiser la taille du tableau.
 %assertLength([H|Q]) va donner une taille de 8 a la premiere ligne du tableau puis recursivement egalement donner une taille de 8 aux autres lignes.
@@ -106,7 +106,7 @@ display_board(B, Player) :-  writeln('********'), writeln(' 01234567'), display_
 cls :- write('\e[H\e[2J').
 
 %playMove met Player dans la case si elle est vide et applyIt fixe le changement dans la variable dynamique board
-playMove(Board, Row, Column, NewBoard, Player) :- NewBoard=Board, get_element(NewBoard, Row, Column, Player).
+playMove(Board, Row, Column, NewBoard, Player) :- copy_term(Board, NewBoard), get_element(NewBoard, Row, Column, Player).
 applyIt(Board,NewBoard) :- retract(board(Board)), assert(board(NewBoard)).
 
 %getElement met dans Val l'element de Board a la position {NbRow, NbCol}. Si Val est fixe et que la case du tableau est libre, Val va etre mise dans la case

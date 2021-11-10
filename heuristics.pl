@@ -97,46 +97,16 @@ test(Result):-
 
 afficherPionsJoueur(Player):- exampleBoard(Board), writeln(Board), hasSymbol(Player,Symbol), compterPionsJoueur(Board,Symbol,Res), write('Le joueur : '), write(Symbol), write('possede '), write(Res), write('pions').
 
-parcoursTree(T,[],Player,MaximizingPlayer,_,Board,Res,_,_,_):-T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),eval(NewBoard,MaximizingPlayer,Res),
-write('feuille'),write(', mon eval vaut '), writeln(Res).
+parcoursTree(T,[],Player,MaximizingPlayer,_,Board,Res,_,_,_,_,_):-T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),evalWithCoeffs(MaximizingPlayer,0,NewBoard,Res).%eval(NewBoard,MaximizingPlayer,Res).
 
-parcoursTree(T,_,Player,MaximizingPlayer,0,Board,Res,_,_,_):-T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),eval(NewBoard,MaximizingPlayer,Res),
-write('feuille'),write(', mon eval vaut '), writeln(Res).
-
-parcoursTree(T,[Q1|Q3],Player,Player,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):-
-    T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
-    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
-    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    write('Je suis depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyB),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    ((ResE>MaxEval, BestMoveActueal=Q1);(BestMoveActueal=PrecBestMove)),
-    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA),
-    write('Je suis toujours depth '), write(Depth), write(', mon a vaut '), write(MyNewA), write(' et mon B vaut '), writeln(MyB),
-    ((MyB>MyNewA, parcoursTree(T,Q3,Player,Player,Depth,Board,ResE,NewMaxEval,MyNewA,MyB,BestMoveActueal,BestMove), Res is ResF);
-    Res is NewMaxEval).
-
-parcoursTree(T,[Q1|Q3],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):-
-    opposite(Player,MaximizingPlayer), T=[R,C],
-    reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
-    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf),
-    NewDepth is Depth-1, MyA is A, MyB is B,
-    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    write('Je suis depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyB),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    ((ResE<MinEval, BestMoveActueal=Q1);(BestMoveActueal=PrecBestMove)),
-    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),
-    write('Je suis toujours depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyNewB),
-    ((MyNewB>MyA, parcoursTree(T,Q3,Player,MaximizingPlayer,Depth,Board,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove), Res is ResF);
-    Res is NewMinEval).
+parcoursTree(T,_,Player,MaximizingPlayer,0,Board,Res,_,_,_,_,_):-T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),evalWithCoeffs(MaximizingPlayer,0,NewBoard,Res).%,eval(NewBoard,MaximizingPlayer,Res).
 
 parcoursTree(T,[Q|[]],Player,Player,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):- 
     T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
     ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
-    write('fin de depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyB),
     Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
     max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA), Res is NewMaxEval,
-    write('toujours fin de depth '), write(Depth), write(', mon a vaut '), write(MyNewA), write(' et mon B vaut '), writeln(MyB),
     ((ResE>MaxEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
 
 parcoursTree(T,[Q|[]],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):-
@@ -144,49 +114,69 @@ parcoursTree(T,[Q|[]],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B,PrecBe
     T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
     ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf), NewDepth is Depth-1, MyA is A, MyB is B,
     Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    write('fin de depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyB),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,MaximizingPlayer,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
     min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),Res is NewMinEval,
-    write('toujours fin de depth '), write(Depth), write(', mon a vaut '), write(MyA), write(' et mon B vaut '), writeln(MyNewB),
     ((ResE<MinEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
 
+parcoursTree(T,[Q1|Q3],Player,Player,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):-
+    T=[R,C], reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
+    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
+    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    ((ResE>MaxEval, BestMoveActueal=Q1);(nonvar(PrecBestMove),BestMoveActueal=PrecBestMove);BestMoveActueal=Q1),
+    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA),
+    ((MyB>MyNewA, parcoursTree(T,Q3,Player,Player,Depth,Board,ResF,NewMaxEval,MyNewA,MyB,BestMoveActueal,BestMove), Res is ResF);
+    Res is NewMaxEval).
+
+parcoursTree(T,[Q1|Q3],Player,MaximizingPlayer,Depth,Board,Res,PrecRes,A,B,PrecBestMove,BestMove):-
+opposite(Player,MaximizingPlayer), T=[R,C],
+    reverse_elements(Board, Player, R, C,TempBoard), playMove(TempBoard, R, C, NewBoard, Player),
+    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf),
+    NewDepth is Depth-1, MyA is A, MyB is B,
+    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,MaximizingPlayer,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    ((ResE<MinEval, BestMoveActueal=Q1);(nonvar(PrecBestMove),BestMoveActueal=PrecBestMove);BestMoveActueal=Q1),
+    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),
+    ((MyNewB>MyA, parcoursTree(T,Q3,Player,MaximizingPlayer,Depth,Board,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove), Res is ResF);
+    Res is NewMinEval).
+
+
+parcoursTree([Q|[]],Player,Player,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):- 
+    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
+    Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA), Res is NewMaxEval,
+    ((ResE<MaxEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
+
+parcoursTree([Q|[]],Player,MaximizingPlayer,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):-
+    opposite(Player,MaximizingPlayer),
+    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf), NewDepth is Depth-1, MyA is A, MyB is B,
+    Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
+    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,MaximizingPlayer,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),Res is NewMinEval,
+    ((ResE>MinEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
 
 parcoursTree([Q1|Q3],Player,Player,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):-
     ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
     Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    ((ResE>MaxEval, BestMoveActueal=Q1);(BestMoveActueal=PrecBestMove)),
+    list_possible_correct_moves2(NewBoard2, Player, Q2),parcoursTree(Q1,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    ((ResE>MaxEval, BestMoveActueal=Q1);(nonvar(PrecBestMove),BestMoveActueal=PrecBestMove);BestMoveActueal=Q1),
     max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA),
-    ((MyB>MyNewA, parcoursTree(T,Q3,Player,Player,Depth,NewBoard,ResE,NewMaxEval,MyNewA,MyB,BestMoveActueal,BestMove,first), Res is ResF);
+    ((MyB>MyNewA, parcoursTree(Q3,Player,Player,Depth,NewBoard,ResF,NewMaxEval,MyNewA,MyB,BestMoveActueal,BestMove,first), Res is ResF);
     Res is NewMaxEval).
 
 parcoursTree([Q1|Q3],Player,MaximizingPlayer,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):-
     opposite(Player,MaximizingPlayer), 
     ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf),
     NewDepth is Depth-1, MyA is A, MyB is B,
-    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    ((ResE<MinEval, BestMoveActueal=Q1);(BestMoveActueal=PrecBestMove)),
+    Q1=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q1,Q2,MaximizingPlayer,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB,_,_),
+    ((ResE<MinEval, BestMoveActueal=Q1);(nonvar(PrecBestMove),BestMoveActueal=PrecBestMove);BestMoveActueal=Q1),
     min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),
-    ((MyNewB>MyA, parcoursTree(T,Q3,Player,MaximizingPlayer,Depth,NewBoard,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove,first), Res is ResF);
+    ((MyNewB>MyA, parcoursTree(Q3,Player,MaximizingPlayer,Depth,NewBoard,ResF,NewMinEval,MyA,MyNewB, BestMoveActueal, BestMove,first), Res is ResF);
     Res is NewMinEval).
-
-parcoursTree([Q|[]],Player,Player,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):- 
-    ((nonvar(PrecRes), MaxEval is PrecRes); MaxEval is -1.0Inf), NewDepth is Depth-1, opposite(Player,OtherPlayer), MyA is A, MyB is B,
-    Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,OtherPlayer,Player,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    max([MaxEval, ResE], NewMaxEval), max([MyA,ResE],MyNewA), Res is NewMaxEval,
-    ((ResE>MaxEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
-
-parcoursTree([Q|[]],Player,MaximizingPlayer,Depth,NewBoard,Res,PrecRes,A,B,PrecBestMove,BestMove,first):-
-    opposite(Player,MaximizingPlayer),
-    ((nonvar(PrecRes), MinEval is PrecRes); MinEval is 1.0Inf), NewDepth is Depth-1, MyA is A, MyB is B,
-    Q=[R2,C2], reverse_elements(NewBoard, Player, R2, C2,TempBoard2), playMove(TempBoard2, R2, C2, NewBoard2, Player),
-    list_possible_correct_moves2(NewBoard2, Player, Q2), parcoursTree(Q,Q2,MaximizingPlayer,NewDepth,NewBoard,ResE,_,MyA,MyB),
-    min([MinEval,ResE],NewMinEval), min([MyB,ResE],MyNewB),Res is NewMinEval,
-    ((ResE<MinEval, BestMove=Q);(nonvar(PrecBestMove),BestMove=PrecBestMove);BestMove=Q).
 
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,first):-writeln("Probleme parcoursTree").
 
 parcoursTree(_,_,_,_,_,_,_,_,_,_,_,_):-writeln("Probleme parcoursTree").
 
-getMoveAlphaBeta(Board,Player,Profondeur,BestMove) :- list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first),writeln(BestMove).
+getMoveAlphaBeta(Board,Player,Profondeur,BestMove) :- list_possible_correct_moves2(Board, Player, CorrectMoves),A is -1.0Inf,B is 1.0Inf,parcoursTree(CorrectMoves,Player,Player,Profondeur,Board,_,_,A,B,_,BestMove,first).
